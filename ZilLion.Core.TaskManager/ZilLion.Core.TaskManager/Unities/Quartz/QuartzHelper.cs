@@ -8,6 +8,7 @@ using Quartz.Impl;
 using Quartz.Impl.Matchers;
 using Quartz.Impl.Triggers;
 using Quartz.Spi;
+using ZilLion.Core.TaskManager.Config;
 using ZilLion.Core.TaskManager.Unities.File;
 
 namespace ZilLion.Core.TaskManager.Unities.Quartz
@@ -62,13 +63,13 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
 
                         scheduler = factory.GetScheduler();
                         scheduler.Clear();
-                        LogHelper.WriteLog("任务调度初始化成功！");
+                        //LogHelper.WriteLog("任务调度初始化成功！");
                     }
                 }
             }
             catch (Exception ex)
             {
-                LogHelper.WriteLog("任务调度初始化失败！", ex);
+                //LogHelper.WriteLog("任务调度初始化失败！", ex);
             }
         }
 
@@ -82,32 +83,32 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
             {
                 if (!scheduler.IsStarted)
                 {
-                    //添加全局监听
-                    scheduler.ListenerManager.AddTriggerListener(new CustomTriggerListener(), GroupMatcher<TriggerKey>.AnyGroup());
-                    scheduler.Start();
+                    ////添加全局监听
+                    //scheduler.ListenerManager.AddTriggerListener(new CustomTriggerListener(), GroupMatcher<TriggerKey>.AnyGroup());
+                    //scheduler.Start();
 
-                    ///获取所有执行中的任务
-                    List<TaskUtil> listTask = TaskHelper.ReadConfig().ToList<TaskUtil>();
-                    if (listTask != null && listTask.Count > 0)
-                    {
-                        foreach (TaskUtil taskUtil in listTask)
-                        {
-                            try
-                            {
-                                ScheduleJob(taskUtil);
-                            }
-                            catch (Exception e)
-                            {
-                                LogHelper.WriteLog(string.Format("任务“{0}”启动失败！", taskUtil.TaskName), e);
-                            }
-                        }
-                    }
-                    LogHelper.WriteLog("任务调度启动成功！");
+                    /////获取所有执行中的任务
+                    //List<Jobconfig> listTask = TaskHelper.ReadConfig();
+                    //if (listTask != null && listTask.Count > 0)
+                    //{
+                    //    foreach (var job in listTask)
+                    //    {
+                    //        try
+                    //        {
+                    //            ScheduleJob(taskUtil);
+                    //        }
+                    //        catch (Exception e)
+                    //        {
+                    //            //LogHelper.WriteLog(string.Format("任务“{0}”启动失败！", taskUtil.TaskName), e);
+                    //        }
+                    //    }
+                    //}
+                    //LogHelper.WriteLog("任务调度启动成功！");
                 }
             }
             catch (Exception ex)
             {
-                LogHelper.WriteLog("任务调度启动失败！", ex);
+                //LogHelper.WriteLog("任务调度启动失败！", ex);
             }
         }
 
@@ -122,7 +123,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
             {
                 //任务已经存在则删除
                 scheduler.DeleteJob(jk);
-                LogHelper.WriteLog(string.Format("任务“{0}”已经删除", JobKey));
+                //LogHelper.WriteLog(string.Format("任务“{0}”已经删除", JobKey));
             }
         }
 
@@ -132,41 +133,41 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         /// <param name="isDeleteOldTask">是否删除原有任务</param>
         /// <returns>返回任务trigger</returns>
         /// </summary>
-        public static void ScheduleJob(TaskUtil taskUtil, bool isDeleteOldTask = false)
+        public static void ScheduleJob(Jobconfig jobconfig, bool isDeleteOldTask = false)
         {
             if (isDeleteOldTask)
             {
                 //先删除现有已存在任务
-                DeleteJob(taskUtil.TaskID.ToString());
+                DeleteJob(jobconfig.Jobid.ToString());
             }
-            //验证是否正确的Cron表达式
-            if (ValidExpression(taskUtil.CronExpressionString))
-            {
-                IJobDetail job = new JobDetailImpl(taskUtil.TaskID.ToString(), GetClassInfo(taskUtil.Assembly, taskUtil.Class));
-                CronTriggerImpl trigger = new CronTriggerImpl();
-                trigger.CronExpressionString = taskUtil.CronExpressionString;
-                trigger.Name = taskUtil.TaskID.ToString();
-                trigger.Description = taskUtil.TaskName;
-                scheduler.ScheduleJob(job, trigger);
-                if (taskUtil.Status == TaskStatus.STOP)
-                {
-                    JobKey jk = new JobKey(taskUtil.TaskID.ToString());
-                    scheduler.PauseJob(jk);
-                }
-                else
-                {
-                    LogHelper.WriteLog(string.Format("任务“{0}”启动成功,未来5次运行时间如下:", taskUtil.TaskName));
-                    List<DateTime> list = GetTaskeFireTime(taskUtil.CronExpressionString, 5);
-                    foreach (var time in list)
-                    {
-                        LogHelper.WriteLog(time.ToString());
-                    }
-                }
-            }
-            else
-            {
-                throw new Exception(taskUtil.CronExpressionString + "不是正确的Cron表达式,无法启动该任务!");
-            }
+            ////验证是否正确的Cron表达式
+            //if (ValidExpression(jobconfig.Jobronexpression))
+            //{
+            //    IJobDetail job = new JobDetailImpl(jobconfig.Jobid, GetClassInfo(taskUtil.Assembly, taskUtil.Class));
+            //    CronTriggerImpl trigger = new CronTriggerImpl();
+            //    trigger.CronExpressionString = taskUtil.CronExpressionString;
+            //    trigger.Name = taskUtil.TaskID.ToString();
+            //    trigger.Description = taskUtil.TaskName;
+            //    scheduler.ScheduleJob(job, trigger);
+            //    if (taskUtil.Status == TaskStatus.STOP)
+            //    {
+            //        JobKey jk = new JobKey(taskUtil.TaskID.ToString());
+            //        scheduler.PauseJob(jk);
+            //    }
+            //    else
+            //    {
+            //        //LogHelper.WriteLog(string.Format("任务“{0}”启动成功,未来5次运行时间如下:", taskUtil.TaskName));
+            //        List<DateTime> list = GetTaskeFireTime(taskUtil.CronExpressionString, 5);
+            //        foreach (var time in list)
+            //        {
+            //            //LogHelper.WriteLog(time.ToString());
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //    throw new Exception(taskUtil.CronExpressionString + "不是正确的Cron表达式,无法启动该任务!");
+            //}
         }
 
         /// <summary>
@@ -185,7 +186,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
                 {
                     scheduler.Interrupt(jk);
                 }
-                LogHelper.WriteLog(string.Format("任务“{0}”已经暂停", JobKey));
+                //LogHelper.WriteLog(string.Format("任务“{0}”已经暂停", JobKey));
             }
         }
 
@@ -200,7 +201,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
             {
                 //任务已经存在则暂停任务
                 scheduler.ResumeJob(jk);
-                LogHelper.WriteLog(string.Format("任务“{0}”恢复运行", JobKey));
+                //LogHelper.WriteLog(string.Format("任务“{0}”恢复运行", JobKey));
             }
         }
 
@@ -215,10 +216,10 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
             {
                 var jobDetail = scheduler.GetJobDetail(jk);
                 var type = jobDetail.JobType;
-                var instance = type.FastNew();
+                //var instance = type.FastNew();
                 var method = type.GetMethod("Execute");
-                method.Invoke(instance, new object[] { null });
-                LogHelper.WriteLog(string.Format("任务“{0}”立即运行", JobKey));
+                //method.Invoke(instance, new object[] { null });
+                //LogHelper.WriteLog(string.Format("任务“{0}”立即运行", JobKey));
             }
         }
         /// 获取类的属性、方法  
@@ -259,12 +260,12 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
                 {
                     //等待任务运行完成
                     scheduler.Shutdown(true);
-                    LogHelper.WriteLog("任务调度停止！");
+                    //LogHelper.WriteLog("任务调度停止！");
                 }
             }
             catch (Exception ex)
             {
-                LogHelper.WriteLog("任务调度停止失败！", ex);
+                //LogHelper.WriteLog("任务调度停止失败！", ex);
             }
         }
 

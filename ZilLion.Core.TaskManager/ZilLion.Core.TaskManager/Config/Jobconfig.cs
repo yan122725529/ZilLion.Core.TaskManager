@@ -1,4 +1,6 @@
-﻿namespace ZilLion.Core.TaskManager.Config
+﻿using DapperExtensions.Mapper;
+
+namespace ZilLion.Core.TaskManager.Config
 {
     public class Jobconfig
     {
@@ -42,5 +44,22 @@
         /// </summary>
         public int Jobstatus { get; set; }
 
+    }
+
+    public sealed class JobconfigMapper : ClassMapper<Jobconfig>
+    {
+        public JobconfigMapper()
+        {
+            Table("task_job_config");
+            Map(f => f.Jobid).Column("jobid");
+            Map(f => f.Jobname).Column("jobname");
+            Map(f => f.Jobremark).Column("jobremark");
+            Map(f => f.Jobmodule).Column("jobmodule");
+            Map(f => f.JobAction).Column("jobAction");
+            Map(f => f.Jobparam).Column("jobparam");
+            Map(f => f.Jobronexpression).Column("jobronexpression");
+            Map(f => f.Jobstatus).Column("jobstatus");
+
+        }
     }
 }

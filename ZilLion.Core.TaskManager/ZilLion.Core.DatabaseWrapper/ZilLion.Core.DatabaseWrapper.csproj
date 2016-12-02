@@ -56,6 +56,14 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dapper, Version=1.12.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Dapper.1.12\lib\net40\Dapper.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="DapperExtensions, Version=1.4.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DapperExtensions.1.4.4\lib\net40\DapperExtensions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="MongoDB.Bson, Version=1.8.3.9, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
       <HintPath>..\packages\MongoDB_BSon_AND_Driver.1.0.0\lib\MongoDB.Bson.dll</HintPath>
       <Private>True</Private>
@@ -65,32 +73,15 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
-    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="Z.ExtensionMethods">
-      <HintPath>..\packages\Z.ExtensionMethods.2.0.10\lib\net40\Z.ExtensionMethods.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Dapper\BaseEntity.cs" />
-    <Compile Include="Dapper\Configs\AccountContext.cs" />
-    <Compile Include="Dapper\Configs\AccountModel.cs" />
-    <Compile Include="Dapper\Configs\DbModelCmd.cs" />
-    <Compile Include="Dapper\Configs\DbModelCmdRs.cs" />
-    <Compile Include="Dapper\Configs\ServerAnswer.cs" />
-    <Compile Include="Dapper\Configs\ServerConfig.cs" />
-    <Compile Include="Dapper\Configs\ServerConnect.cs" />
-    <Compile Include="Dapper\Configs\SourceContext.cs" />
-    <Compile Include="Dapper\CustomerException\DbLocalErrException.cs" />
-    <Compile Include="Dapper\CustomerException\LocalErrorModel.cs" />
-    <Compile Include="Dapper\IBillsRespository.cs" />
-    <Compile Include="Dapper\IElmentsDataRespository.cs" />
     <Compile Include="Dapper\IDbContext.cs" />
     <Compile Include="Dapper\IRespository.cs" />
     <Compile Include="Dapper\OperatorInfo.cs" />
@@ -104,16 +95,6 @@
     </Compile>
     <Compile Include="Dapper\UnitOfWork.cs" />
     <Compile Include="Dapper\UnitOfWorkOption.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\DapperExtensions\DapperExtensions.csproj">
-      <Project>{4C1A2C6C-A469-4C87-98D1-F1D517FA1ACF}</Project>
-      <Name>DapperExtensions</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Dapper\Dapper.csproj">
-      <Project>{6da7fd8f-6c1f-4c7b-a1ed-d9651eec19ff}</Project>
-      <Name>Dapper</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
