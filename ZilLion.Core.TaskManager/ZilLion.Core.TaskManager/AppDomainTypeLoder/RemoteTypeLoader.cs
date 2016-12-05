@@ -25,7 +25,7 @@ namespace ZilLion.Core.TaskManager.AppDomainTypeLoder
             if(Path.IsPathRooted(args.Name))
                 return null;
 
-            return Assembly.LoadFrom(Path.Combine("plugins", args.Name));
+            return Assembly.LoadFrom(Path.Combine("ZilLionTask", args.Name));
         }
         /// <summary>
         /// 加载程序集

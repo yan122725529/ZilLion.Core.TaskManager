@@ -52,6 +52,7 @@ namespace ZilLion.Core.TaskManager
         #endregion
 
         #region 刷新配置
+
         public void RefreshJob(List<string> joblist = null)
         {
             var todolist = new List<Jobconfig>();

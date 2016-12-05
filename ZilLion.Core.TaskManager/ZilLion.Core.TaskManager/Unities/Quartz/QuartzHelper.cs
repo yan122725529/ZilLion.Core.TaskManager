@@ -130,6 +130,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
             {
                 string taskFileName = $@"ZilLion.Task.{jobconfig.Jobmodule}.dll";
                 var taskClassName = jobconfig.Jobname;
+                if (!System.IO.File.Exists($@"{TaskRootPath}\{taskFileName}")) return; //当文件不存在
 
                 IJobDetail job = new JobDetailImpl(jobconfig.Jobid, GetClassInfo(taskFileName, taskClassName));
                 var trigger = new CronTriggerImpl
@@ -207,19 +208,29 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
             }
         }
 
-        /// 获取类的属性、方法
+        /// <summary>
+        ///     获取job类
         /// </summary>
-        /// <param name="assemblyName">程序集</param>
-        /// <param name="className">类名</param>
-        //todo 使用APPDOMAIN  加载 并对APPDomain监控
+        /// <param name="assemblyName"></param>
+        /// <param name="className"></param>
+        /// <returns></returns>
         private static Type GetClassInfo(string assemblyName, string className)
         {
             try
             {
-                var loader = new TypeLoader(assemblyName);
-                var assembly = loader.RemoteTypeLoader.LoadedAssembly;
+                Assembly assembly = null;
+                if (AssemblyDict.ContainsKey(assemblyName))
+                {
+                    assembly = AssemblyDict[assemblyName];
+                }
+                else
+                {
+                    var loader = new TypeLoader(assemblyName);
+                    assembly = loader.RemoteTypeLoader.LoadedAssembly;
+                }
+                if (assembly == null) return null;
                 var type = assembly.GetType(className, true, true);
-                return type;
+                return type.GetInterfaces().Any(x => x.Name.ToUpper().Contains("IJOB")) ? type : null;
             }
             catch (Exception ex)
             {

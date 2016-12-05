@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using ZilLion.Core.TaskManager.Unities.File;
 
 namespace ZilLion.Core.TaskManager.AppDomainTypeLoder
 {
@@ -13,8 +14,8 @@ namespace ZilLion.Core.TaskManager.AppDomainTypeLoder
             var setup = new AppDomainSetup
             {
                 ApplicationName = "JobLoader",
-                ApplicationBase = System.AppDomain.CurrentDomain.BaseDirectory,
-                PrivateBinPath = "Jobs",
+                ApplicationBase = FileHelper.GetRootPath(),
+                PrivateBinPath = "ZilLionTask",
                 CachePath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "JobCachePath")
             };
             ;
