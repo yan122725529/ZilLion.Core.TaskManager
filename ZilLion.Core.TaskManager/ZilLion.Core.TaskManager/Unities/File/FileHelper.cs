@@ -33,7 +33,8 @@ namespace ZilLion.Core.TaskManager.Unities.File
             }
             else
             {
-                return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relativePath);
+             
+                return Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, relativePath);
             }
         }
 

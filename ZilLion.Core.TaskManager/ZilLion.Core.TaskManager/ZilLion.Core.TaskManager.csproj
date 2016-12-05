@@ -65,6 +65,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppDomainTypeLoder\PluginManager.cs" />
+    <Compile Include="AppDomainTypeLoder\RemoteTypeLoader.cs" />
+    <Compile Include="AppDomainTypeLoder\TypeLoader.cs" />
     <Compile Include="Config\Jobconfig.cs" />
     <Compile Include="Config\TaskManagerConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

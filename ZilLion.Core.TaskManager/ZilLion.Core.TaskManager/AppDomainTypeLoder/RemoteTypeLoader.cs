@@ -2,7 +2,7 @@
 using System.IO;
 using System.Reflection;
 
-namespace PluginTaskBase
+namespace ZilLion.Core.TaskManager.AppDomainTypeLoder
 {
     public class RemoteTypeLoader : MarshalByRefObject
     {
@@ -11,7 +11,7 @@ namespace PluginTaskBase
 
         public RemoteTypeLoader()
         {
-            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            System.AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
         }
 
         /// <summary>

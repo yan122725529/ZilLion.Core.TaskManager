@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-
-namespace PluginTaskBase
+﻿namespace ZilLion.Core.TaskManager.AppDomainTypeLoder
 {
     /// <summary>
     /// 
