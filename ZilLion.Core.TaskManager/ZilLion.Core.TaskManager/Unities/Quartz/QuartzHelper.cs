@@ -137,10 +137,12 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
             if (ValidExpression(jobconfig.Jobronexpression))
             {
                 IJobDetail job = new JobDetailImpl(jobconfig.Jobid, GetClassInfo(taskUtil.Assembly, taskUtil.Class));
-                CronTriggerImpl trigger = new CronTriggerImpl();
-                trigger.CronExpressionString = jobconfig.Jobronexpression;
-                trigger.Name = jobconfig.Jobid.ToString();
-                trigger.Description = jobconfig.Jobname;
+                var trigger = new CronTriggerImpl
+                {
+                    CronExpressionString = jobconfig.Jobronexpression,
+                    Name = jobconfig.Jobid.ToString(),
+                    Description = jobconfig.Jobname
+                };
                 _scheduler.ScheduleJob(job, trigger);
                 if (jobconfig.Jobstatus == 1)
                 {
