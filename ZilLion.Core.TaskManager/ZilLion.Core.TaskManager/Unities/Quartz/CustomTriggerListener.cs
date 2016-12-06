@@ -8,13 +8,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
     /// </summary>
     public class CustomTriggerListener : ITriggerListener
     {
-        public string Name
-        {
-            get
-            {
-                return "All_TriggerListener";
-            }
-        }
+        public string Name => "All_TriggerListener";
 
         /// <summary>
         /// Job执行时调用
@@ -23,7 +17,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         /// <param name="context">上下文</param>
         public void TriggerFired(ITrigger trigger, IJobExecutionContext context)
         {
-            
+
         }
 
 

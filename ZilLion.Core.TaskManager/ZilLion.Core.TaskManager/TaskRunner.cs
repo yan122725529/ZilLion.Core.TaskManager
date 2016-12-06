@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using ZilLion.Core.TaskManager.Config;
+using ZilLion.Core.TaskManager.Respository;
 
 namespace ZilLion.Core.TaskManager
 {
@@ -9,23 +11,21 @@ namespace ZilLion.Core.TaskManager
         #region 作业配置
 
         /// <summary>
-        /// 可用作业配置
+        ///     可用作业配置
         /// </summary>
         public IList<Jobconfig> UseableJobconfigs { get; set; }
 
+        private readonly JobConfigRespository _jobConfigRespository = new JobConfigRespository();
+
         private void GetUseableJobconfigs()
         {
-            if (UseableJobconfigs==null)
-                UseableJobconfigs=new List<Jobconfig>();
+            if (UseableJobconfigs == null)
+                UseableJobconfigs = new List<Jobconfig>();
             UseableJobconfigs.Clear();
-            //todo 从数据库获取
-            UseableJobconfigs=new List<Jobconfig>() {new Jobconfig() {} };
+            UseableJobconfigs = _jobConfigRespository.GetjobConfigs();
         }
 
-
         #endregion
-
-
 
         #region 单例
 
@@ -39,6 +39,7 @@ namespace ZilLion.Core.TaskManager
         {
             _instance = new TaskRunner();
             TaskManagerConfig.JobConfigDbConString = jobConfigDbConString;
+
         }
 
         public static TaskRunner Getinstance()
@@ -55,35 +56,28 @@ namespace ZilLion.Core.TaskManager
 
         public void RefreshJob(List<string> joblist = null)
         {
+            GetUseableJobconfigs();
             var todolist = new List<Jobconfig>();
-            if (joblist == null)
+            todolist.AddRange(joblist?.Select(todojob => UseableJobconfigs.FirstOrDefault(x => x.Jobid == todojob))
+                                  .Where(first => first != null) ?? UseableJobconfigs);
+
+
+
+            foreach (var todojob in todolist)
             {
-                //刷新全部配置
-                GetUseableJobconfigs();
 
             }
-            else
-            {
-
-            }
-
-
         }
+
         /// <summary>
-        /// 重启job
+        ///     重启job
         /// </summary>
         /// <param name="jobid"></param>
         private void Restartjob(string jobid)
         {
-
         }
 
-
         #endregion
-
-
-
-
     }
 }
 
@@ -113,7 +107,7 @@ namespace ZilLion.Core.TaskManager
 //        QuartzHelper.InitScheduler();
 //        QuartzHelper.StartScheduler();
 
-//        // 保持web服务运行  
+//        // 保持web服务运行
 //        ThreadPool.QueueUserWorkItem((o) =>
 //        {
 //            //启动站点

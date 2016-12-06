@@ -33,7 +33,7 @@ namespace ZilLion.Core.TaskManager.Unities.File
             }
             else
             {
-             
+
                 return Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, relativePath);
             }
         }
@@ -41,7 +41,6 @@ namespace ZilLion.Core.TaskManager.Unities.File
         /// <summary>
         /// 获取文件的绝对路径,针对window程序和web程序都可使用
         /// </summary>
-        /// <param name="relativePath">相对路径地址</param>
         /// <returns>绝对路径地址</returns>
         public static string GetRootPath()
         {
@@ -62,18 +61,18 @@ namespace ZilLion.Core.TaskManager.Unities.File
         /// <param name="filePath1">文件1地址</param>
         /// <param name="filePath2">文件2地址</param>
         /// <returns></returns>
-        public static bool isValidFileContent(string filePath1, string filePath2)
+        public static bool IsValidFileContent(string filePath1, string filePath2)
         {
-            //创建一个哈希算法对象 
+            //创建一个哈希算法对象
             using (HashAlgorithm hash = HashAlgorithm.Create())
             {
                 using (FileStream file1 = new FileStream(filePath1, FileMode.Open), file2 = new FileStream(filePath2, FileMode.Open))
                 {
-                    byte[] hashByte1 = hash.ComputeHash(file1);//哈希算法根据文本得到哈希码的字节数组 
+                    byte[] hashByte1 = hash.ComputeHash(file1);//哈希算法根据文本得到哈希码的字节数组
                     byte[] hashByte2 = hash.ComputeHash(file2);
-                    string str1 = BitConverter.ToString(hashByte1);//将字节数组装换为字符串 
+                    string str1 = BitConverter.ToString(hashByte1);//将字节数组装换为字符串
                     string str2 = BitConverter.ToString(hashByte2);
-                    return (str1 == str2);//比较哈希码 
+                    return (str1 == str2);//比较哈希码
                 }
             }
         }
@@ -85,14 +84,14 @@ namespace ZilLion.Core.TaskManager.Unities.File
         /// <returns>文件hash值</returns>
         public static string GetFileHash(string filePath)
         {
-            //创建一个哈希算法对象 
+            //创建一个哈希算法对象
             using (HashAlgorithm hash = HashAlgorithm.Create())
             {
                 using (FileStream file = new FileStream(filePath, FileMode.Open))
                 {
-                    //哈希算法根据文本得到哈希码的字节数组 
+                    //哈希算法根据文本得到哈希码的字节数组
                     byte[] hashByte= hash.ComputeHash(file);
-                    //将字节数组装换为字符串  
+                    //将字节数组装换为字符串
                     return BitConverter.ToString(hashByte);
                 }
             }

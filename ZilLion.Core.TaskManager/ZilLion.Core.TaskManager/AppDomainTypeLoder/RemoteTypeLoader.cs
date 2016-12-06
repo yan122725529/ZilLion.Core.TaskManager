@@ -20,12 +20,9 @@ namespace ZilLion.Core.TaskManager.AppDomainTypeLoder
         /// <param name="sender"></param>
         /// <param name="args"></param>
         /// <returns></returns>
-        Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        public static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
-            if(Path.IsPathRooted(args.Name))
-                return null;
-
-            return Assembly.LoadFrom(Path.Combine("ZilLionTask", args.Name));
+            return Path.IsPathRooted(args.Name) ? null : Assembly.LoadFrom(Path.Combine("ZilLionTask", args.Name));
         }
         /// <summary>
         /// 加载程序集
@@ -59,7 +56,7 @@ namespace ZilLion.Core.TaskManager.AppDomainTypeLoder
             this.LoadedAssembly = this.LoadAssembly(this._assemblyPath);
         }
 
-      
+
     }
 
 

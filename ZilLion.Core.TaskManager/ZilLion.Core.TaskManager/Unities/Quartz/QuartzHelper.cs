@@ -29,7 +29,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         /// <summary>
         ///     缓存任务所在程序集信息
         /// </summary>
-        private static readonly Dictionary<string, Assembly> AssemblyDict = new Dictionary<string, Assembly>();
+        private static readonly Dictionary<string, Assembly> AssemblyDic = new Dictionary<string, Assembly>();
 
         private static IScheduler _scheduler;
 
@@ -86,16 +86,16 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
 
                     /////获取所有执行中的任务
                     var joblist = TaskHelper.ReadConfig();
-                    if ((joblist != null) && joblist.Any())
-                        foreach (var job in joblist)
-                            try
-                            {
-                                ScheduleJob(job);
-                            }
-                            catch (Exception ex)
-                            {
-                                //LogHelper.WriteLog(string.Format("任务“{0}”启动失败！", taskUtil.TaskName), e);
-                            }
+                    if ((joblist == null) || !joblist.Any()) return;
+                    foreach (var job in joblist)
+                        try
+                        {
+                            ScheduleJob(job);
+                        }
+                        catch (Exception ex)
+                        {
+                            //LogHelper.WriteLog(string.Format("任务“{0}”启动失败！", taskUtil.TaskName), e);
+                        }
                     //LogHelper.WriteLog("任务调度启动成功！");
                 }
             }
@@ -219,9 +219,9 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
             try
             {
                 Assembly assembly = null;
-                if (AssemblyDict.ContainsKey(assemblyName))
+                if (AssemblyDic.ContainsKey(assemblyName))
                 {
-                    assembly = AssemblyDict[assemblyName];
+                    assembly = AssemblyDic[assemblyName];
                 }
                 else
                 {
