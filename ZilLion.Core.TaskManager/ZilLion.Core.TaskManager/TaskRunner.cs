@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ZilLion.Core.TaskManager.Config;
 using ZilLion.Core.TaskManager.Respository;
+using ZilLion.Core.TaskManager.Unities.Quartz;
 
 namespace ZilLion.Core.TaskManager
 {
@@ -13,14 +14,14 @@ namespace ZilLion.Core.TaskManager
         /// <summary>
         ///     可用作业配置
         /// </summary>
-        public IList<Jobconfig> UseableJobconfigs { get; set; }
+        public IList<Taskconfig> UseableJobconfigs { get; set; }
 
         private readonly JobConfigRespository _jobConfigRespository = new JobConfigRespository();
 
-        private void GetUseableJobconfigs()
+        private  void GetUseableJobconfigs()
         {
             if (UseableJobconfigs == null)
-                UseableJobconfigs = new List<Jobconfig>();
+                UseableJobconfigs = new List<Taskconfig>();
             UseableJobconfigs.Clear();
             UseableJobconfigs = _jobConfigRespository.GetjobConfigs();
         }
@@ -35,12 +36,7 @@ namespace ZilLion.Core.TaskManager
         {
         }
 
-        public static void InitTastRunner(string jobConfigDbConString)
-        {
-            _instance = new TaskRunner();
-            TaskManagerConfig.JobConfigDbConString = jobConfigDbConString;
 
-        }
 
         public static TaskRunner Getinstance()
         {
@@ -52,74 +48,94 @@ namespace ZilLion.Core.TaskManager
 
         #endregion
 
-        #region 刷新配置
-
-        public void RefreshJob(List<string> joblist = null)
+        #region 初始化
+        /// <summary>
+        /// 初始化
+        /// </summary>
+        /// <param name="jobConfigDbConString"></param>
+        public static void InitTaskRunner(string jobConfigDbConString)
         {
-            GetUseableJobconfigs();
-            var todolist = new List<Jobconfig>();
-            todolist.AddRange(joblist?.Select(todojob => UseableJobconfigs.FirstOrDefault(x => x.Jobid == todojob))
-                                  .Where(first => first != null) ?? UseableJobconfigs);
+            _instance = new TaskRunner();
+            TaskManagerConfig.JobConfigDbConString = jobConfigDbConString;//获得task配置库数据库连接
+            //GetUseableJobconfigs();
+            QuartzHelper.InitScheduler();//任务调度初始化成功
+
+            //todo InitTastRunner日志
+            //todo While 循环监控数据库变化？
+
+        }
 
 
+        #endregion
 
-            foreach (var todojob in todolist)
-            {
+        #region 任务执行
 
-            }
+        /// <summary>
+        /// 开始所有执行的任务，并且结合配置执行状态表数据
+        /// </summary>
+        public void StartAllScheduler()
+        {
+
+            GetUseableJobconfigs();//读取任务配置
+            QuartzHelper.StartScheduler(this.UseableJobconfigs);//开始任务
+
+            //生成任务执行日志（包括状态等）
+        }
+        /// <summary>
+        /// 停止所有执行任务，并清空执行状态表
+        /// </summary>
+        public void StopAllTask()
+        {
+            QuartzHelper.StopSchedule();
+            //todo 清空执行状态表
+
         }
 
         /// <summary>
-        ///     重启job
+        /// 根据ID立即执行
         /// </summary>
-        /// <param name="jobid"></param>
-        private void Restartjob(string jobid)
+        /// <param name="taskId"></param>
+        public  void RunOnceTaskById(string taskId)
         {
+            QuartzHelper.RunOnceTask(taskId);
+        }
+
+        /// <summary>
+        /// 删除指定id任务
+        /// </summary>
+        /// <param name="taskId">任务id</param>
+        public void DeleteById(string taskId)
+        {
+            QuartzHelper.DeleteJob(taskId);
+            //_jobConfigRespository.SaveData();//todo 保存数据库（配置表更新，任务状态表更新）
+        }
+
+        /// <summary>
+        /// 更新任务运行状态
+        /// </summary>
+        /// <param name="taskId">任务id</param>
+        /// <param name="status">任务状态</param>
+        public  void UpdateTaskStatus(string taskId, TaskStatus status)
+        {
+            if (status == TaskStatus.Run)
+                QuartzHelper.ResumeJob(taskId);
+            else
+                QuartzHelper.PauseJob(taskId);
+            var config = _jobConfigRespository.GetjobConfig(taskId);
+            config.Jobstatus = status == TaskStatus.Run ? 0 : 1;
+            _jobConfigRespository.SaveData(config);
+        }
+
+        /// <summary>
+        /// 更新任务（更新来源：1：配置库有变化（增删改查）；2：监控到task文件夹变化）
+        /// </summary>
+        /// <param name="taskId"></param>
+
+        public void RefreshChangedTask(string taskId)
+        {
+
         }
 
         #endregion
     }
 }
-
-
-//public partial class TaskManagerService : ServiceBase
-//{
-//    public TaskManagerService()
-//    {
-//        InitializeComponent();
-//    }
-
-//    protected override void OnStart(string[] args)
-//    {
-//        DebuggableAttribute att = System.Reflection.Assembly.GetExecutingAssembly().GetCustomAttribute<DebuggableAttribute>();
-//        if (att.IsJITTrackingEnabled)
-//        {
-//            //Debug模式才让线程停止10s,方便附加到进程调试
-//            Thread.Sleep(10000);
-//        }
-//        //配置信息读取
-//        ConfigInit.InitConfig();
-//        //3.系统参数配置初始化
-//        MefConfig.Init();
-//        ConfigManager configManager = MefConfig.TryResolve<ConfigManager>();
-//        configManager.Init();
-
-//        QuartzHelper.InitScheduler();
-//        QuartzHelper.StartScheduler();
-
-//        // 保持web服务运行
-//        ThreadPool.QueueUserWorkItem((o) =>
-//        {
-//            //启动站点
-//            Startup.Start(SystemConfig.WebPort);
-//        });
-//    }
-
-//    protected override void OnStop()
-//    {
-//        QuartzHelper.StopSchedule();
-//        //回收资源
-//        Startup.Dispose();
-//        System.Environment.Exit(0);
-//    }
-//}

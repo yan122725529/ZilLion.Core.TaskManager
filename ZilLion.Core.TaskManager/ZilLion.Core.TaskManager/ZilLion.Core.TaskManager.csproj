@@ -68,7 +68,7 @@
     <Compile Include="AppDomainTypeLoder\PluginManager.cs" />
     <Compile Include="AppDomainTypeLoder\RemoteTypeLoader.cs" />
     <Compile Include="AppDomainTypeLoder\TypeLoader.cs" />
-    <Compile Include="Config\Jobconfig.cs" />
+    <Compile Include="Config\Taskconfig.cs" />
     <Compile Include="Config\TaskManagerConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Respository\jobConfigRespository.cs" />
@@ -78,7 +78,6 @@
     <Compile Include="Unities\Quartz\CustomTriggerListener.cs" />
     <Compile Include="Unities\Quartz\QuartzHelper.cs" />
     <Compile Include="Unities\Quartz\TaskRunLog.cs" />
-    <Compile Include="Unities\Quartz\TaskHelper.cs" />
     <Compile Include="Unities\File\FileHelper.cs" />
   </ItemGroup>
   <ItemGroup>

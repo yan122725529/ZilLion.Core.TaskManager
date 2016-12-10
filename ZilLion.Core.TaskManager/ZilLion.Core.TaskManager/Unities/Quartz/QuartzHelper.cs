@@ -29,7 +29,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         /// <summary>
         ///     缓存任务所在程序集信息
         /// </summary>
-        private static readonly Dictionary<string, Assembly> AssemblyDic = new Dictionary<string, Assembly>();
+        public static readonly Dictionary<string, Assembly> AssemblyDic = new Dictionary<string, Assembly>();
 
         private static IScheduler _scheduler;
 
@@ -69,49 +69,89 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
             }
         }
 
+        #region 获取job实例
+
+        /// <summary>
+        ///     获取job类
+        /// </summary>
+        /// <param name="assemblyName"></param>
+        /// <param name="className"></param>
+        /// <returns></returns>
+        private static Type GetClassInfo(string assemblyName, string className)
+        {
+            try
+            {
+                Assembly assembly = null;
+                if (AssemblyDic.ContainsKey(assemblyName))
+                {
+                    assembly = AssemblyDic[assemblyName];
+                }
+                else
+                {
+                    var loader = new TypeLoader(assemblyName);
+                    assembly = loader.RemoteTypeLoader.LoadedAssembly;
+                }
+                if (assembly == null) return null;
+                var type = assembly.GetType(className, true, true);
+                return type.GetInterfaces().Any(x => x.Name.ToUpper().Contains("IJOB")) ? type : null;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        #endregion
+
+        #region 任务执行相关
+
         /// <summary>
         ///     启用任务调度
         ///     启动调度时会把任务表中状态为“执行中”的任务加入到任务调度队列中
         /// </summary>
-        public static void StartScheduler()
+        public static void StartScheduler(IList<Taskconfig> configs)
         {
-            try
-            {
-                if (!_scheduler.IsStarted)
-                {
-                    //添加全局监听
-                    _scheduler.ListenerManager.AddTriggerListener(new CustomTriggerListener(),
-                        GroupMatcher<TriggerKey>.AnyGroup());
-                    _scheduler.Start();
+            if (configs == null)
+                return;
 
-                    /////获取所有执行中的任务
-                    var joblist = TaskHelper.ReadConfig();
-                    if ((joblist == null) || !joblist.Any()) return;
-                    foreach (var job in joblist)
-                        try
-                        {
-                            ScheduleJob(job);
-                        }
-                        catch (Exception ex)
-                        {
-                            //LogHelper.WriteLog(string.Format("任务“{0}”启动失败！", taskUtil.TaskName), e);
-                        }
-                    //LogHelper.WriteLog("任务调度启动成功！");
+
+            var todoTask = configs.Where(x => x.Jobstatus == 0).ToList();
+            if (todoTask.Any())
+                try
+                {
+                    if (!_scheduler.IsStarted)
+                    {
+                        //添加全局监听
+                        _scheduler.ListenerManager.AddTriggerListener(new CustomTriggerListener(),
+                            GroupMatcher<TriggerKey>.AnyGroup());
+                        _scheduler.Start();
+
+                        //获取所有执行中的任务
+                        foreach (var job in todoTask)
+                            try
+                            {
+                                ScheduleJob(job);
+                            }
+                            catch (Exception ex)
+                            {
+                                //LogHelper.WriteLog(string.Format("任务“{0}”启动失败！", taskUtil.TaskName), e);
+                            }
+                        //LogHelper.WriteLog("任务调度启动成功！");
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                //LogHelper.WriteLog("任务调度启动失败！", ex);
-            }
+                catch (Exception ex)
+                {
+                    //LogHelper.WriteLog("任务调度启动失败！", ex);
+                }
         }
 
         /// <summary>
         ///     删除现有任务
         /// </summary>
-        /// <param name="JobKey"></param>
-        public static void DeleteJob(string JobKey)
+        /// <param name="jobKey"></param>
+        public static void DeleteJob(string jobKey)
         {
-            var jk = new JobKey(JobKey);
+            var jk = new JobKey(jobKey);
             if (_scheduler.CheckExists(jk))
                 _scheduler.DeleteJob(jk);
         }
@@ -119,36 +159,36 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         /// <summary>
         ///     开始job
         /// </summary>
-        /// <param name="jobconfig"></param>
+        /// <param name="taskconfig"></param>
         /// <param name="isDeleteOldTask"></param>
-        public static void ScheduleJob(Jobconfig jobconfig, bool isDeleteOldTask = false)
+        public static void ScheduleJob(Taskconfig taskconfig, bool isDeleteOldTask = false)
         {
             if (isDeleteOldTask)
-                DeleteJob(jobconfig.Jobid);
+                DeleteJob(taskconfig.Jobid);
             //验证是否正确的Cron表达式
-            if (ValidExpression(jobconfig.Jobronexpression))
+            if (ValidExpression(taskconfig.Jobronexpression))
             {
-                string taskFileName = $@"ZilLion.Task.{jobconfig.Jobmodule}.dll";
-                var taskClassName = jobconfig.Jobname;
+                string taskFileName = $@"ZilLion.Task.{taskconfig.Jobmodule}.dll";
+                var taskClassName = taskconfig.Jobname;
                 if (!System.IO.File.Exists($@"{TaskRootPath}\{taskFileName}")) return; //当文件不存在
 
-                IJobDetail job = new JobDetailImpl(jobconfig.Jobid, GetClassInfo(taskFileName, taskClassName));
+                IJobDetail job = new JobDetailImpl(taskconfig.Jobid, GetClassInfo(taskFileName, taskClassName));
                 var trigger = new CronTriggerImpl
                 {
-                    CronExpressionString = jobconfig.Jobronexpression,
-                    Name = jobconfig.Jobid,
-                    Description = jobconfig.Jobname
+                    CronExpressionString = taskconfig.Jobronexpression,
+                    Name = taskconfig.Jobid,
+                    Description = taskconfig.Jobname
                 };
                 _scheduler.ScheduleJob(job, trigger);
-                if (jobconfig.Jobstatus == 1)
+                if (taskconfig.Jobstatus == 1)
                 {
-                    var jk = new JobKey(jobconfig.Jobid);
+                    var jk = new JobKey(taskconfig.Jobid);
                     _scheduler.PauseJob(jk);
                 }
                 else
                 {
                     //LogHelper.WriteLog(string.Format("任务“{0}”启动成功,未来5次运行时间如下:", taskUtil.TaskName));
-                    var list = GetTaskeFireTime(jobconfig.Jobronexpression, 5);
+                    var list = GetTaskeFireTime(taskconfig.Jobronexpression, 5);
                     foreach (var time in list)
                     {
                         //LogHelper.WriteLog(time.ToString());
@@ -157,7 +197,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
             }
             else
             {
-                throw new Exception(jobconfig.Jobronexpression + "不是正确的Cron表达式,无法启动该任务!");
+                throw new Exception(taskconfig.Jobronexpression + "不是正确的Cron表达式,无法启动该任务!");
             }
         }
 
@@ -193,10 +233,10 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         /// <summary>
         ///     立即运行一次任务
         /// </summary>
-        /// <param name="JobKey">任务key</param>
-        public static void RunOnceTask(string JobKey)
+        /// <param name="jobKey">任务key</param>
+        public static void RunOnceTask(string jobKey)
         {
-            var jk = new JobKey(JobKey);
+            var jk = new JobKey(jobKey);
             if (_scheduler.CheckExists(jk))
             {
                 var jobDetail = _scheduler.GetJobDetail(jk);
@@ -205,36 +245,6 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
                 var method = type.GetMethod("Execute");
                 //method.Invoke(instance, new object[] { null });
                 //LogHelper.WriteLog(string.Format("任务“{0}”立即运行", JobKey));
-            }
-        }
-
-        /// <summary>
-        ///     获取job类
-        /// </summary>
-        /// <param name="assemblyName"></param>
-        /// <param name="className"></param>
-        /// <returns></returns>
-        private static Type GetClassInfo(string assemblyName, string className)
-        {
-            try
-            {
-                Assembly assembly = null;
-                if (AssemblyDic.ContainsKey(assemblyName))
-                {
-                    assembly = AssemblyDic[assemblyName];
-                }
-                else
-                {
-                    var loader = new TypeLoader(assemblyName);
-                    assembly = loader.RemoteTypeLoader.LoadedAssembly;
-                }
-                if (assembly == null) return null;
-                var type = assembly.GetType(className, true, true);
-                return type.GetInterfaces().Any(x => x.Name.ToUpper().Contains("IJOB")) ? type : null;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
             }
         }
 
@@ -271,17 +281,16 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         /// <param name="cronExpressionString">Cron表达式</param>
         /// <param name="numTimes">运行次数</param>
         /// <returns>运行时间段</returns>
-        public static List<DateTime> GetTaskeFireTime(string cronExpressionString, int numTimes)
+        public static IList<DateTime> GetTaskeFireTime(string cronExpressionString, int numTimes)
         {
             if (numTimes < 0)
                 throw new Exception("参数numTimes值大于等于0");
             //时间表达式
             var trigger = TriggerBuilder.Create().WithCronSchedule(cronExpressionString).Build();
             var dates = TriggerUtils.ComputeFireTimes(trigger as IOperableTrigger, null, numTimes);
-            var list = new List<DateTime>();
-            foreach (var dtf in dates)
-                list.Add(TimeZoneInfo.ConvertTimeFromUtc(dtf.DateTime, TimeZoneInfo.Local));
-            return list;
+            return dates.Select(dtf => TimeZoneInfo.ConvertTimeFromUtc(dtf.DateTime, TimeZoneInfo.Local)).ToList();
         }
+
+        #endregion
     }
 }

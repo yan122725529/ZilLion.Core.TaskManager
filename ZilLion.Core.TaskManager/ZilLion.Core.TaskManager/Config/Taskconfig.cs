@@ -2,7 +2,7 @@
 
 namespace ZilLion.Core.TaskManager.Config
 {
-    public class Jobconfig
+    public class Taskconfig
     {
         /// <summary>
         /// 作业ID
@@ -46,7 +46,7 @@ namespace ZilLion.Core.TaskManager.Config
 
     }
 
-    public sealed class JobconfigMapper : ClassMapper<Jobconfig>
+    public sealed class JobconfigMapper : ClassMapper<Taskconfig>
     {
         public JobconfigMapper()
         {

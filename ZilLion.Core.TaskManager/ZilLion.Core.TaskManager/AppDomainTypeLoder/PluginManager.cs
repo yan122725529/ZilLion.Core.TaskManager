@@ -1,11 +1,11 @@
 ﻿namespace ZilLion.Core.TaskManager.AppDomainTypeLoder
 {
     /// <summary>
-    /// 
+    /// task目录监视功能，暂时不要
     /// </summary>
     public class PluginManager
     {
-        
+
 
         //private static readonly PluginManager Instance;
 

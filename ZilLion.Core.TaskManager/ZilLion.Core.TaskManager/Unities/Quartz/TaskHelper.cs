@@ -23,7 +23,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         ///     获取指定id任务数据
         /// </summary>
         /// <returns>任务数据</returns>
-        public static Jobconfig GetById(string jobid)
+        public static Taskconfig GetById(string jobid)
         {
             return JobConfigRespository.GetjobConfig(jobid);
         }
@@ -64,15 +64,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         }
 
 
-        /// <summary>
-        ///     获取所有启用的任务
-        /// </summary>
-        /// <returns>所有启用的任务</returns>
-        public static IList<Jobconfig> ReadConfig()
-        {
-            return JobConfigRespository.GetjobConfigs().Where(x => x.Jobstatus == 0).ToList();
-        }
-
+       
    
         /// <summary>
         ///     更新任务下次运行时间
