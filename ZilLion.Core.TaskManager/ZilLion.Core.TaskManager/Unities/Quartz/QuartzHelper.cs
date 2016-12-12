@@ -109,13 +109,13 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         ///     启用任务调度
         ///     启动调度时会把任务表中状态为“执行中”的任务加入到任务调度队列中
         /// </summary>
-        public static void StartScheduler(IList<Taskconfig> configs)
+        public static void StartScheduler(IList<TaskConfig> configs)
         {
             if (configs == null)
                 return;
 
 
-            var todoTask = configs.Where(x => x.Jobstatus == 0).ToList();
+            var todoTask = configs.Where(x => x.TaskStatus == 0).ToList();
             if (todoTask.Any())
                 try
                 {
@@ -159,36 +159,36 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         /// <summary>
         ///     开始job
         /// </summary>
-        /// <param name="taskconfig"></param>
+        /// <param name="taskConfig"></param>
         /// <param name="isDeleteOldTask"></param>
-        public static void ScheduleJob(Taskconfig taskconfig, bool isDeleteOldTask = false)
+        public static void ScheduleJob(TaskConfig taskConfig, bool isDeleteOldTask = false)
         {
             if (isDeleteOldTask)
-                DeleteJob(taskconfig.Jobid);
+                DeleteJob(taskConfig.Taskid);
             //验证是否正确的Cron表达式
-            if (ValidExpression(taskconfig.Jobronexpression))
+            if (ValidExpression(taskConfig.TaskExpression))
             {
-                string taskFileName = $@"ZilLion.Task.{taskconfig.Jobmodule}.dll";
-                var taskClassName = taskconfig.Jobname;
+                string taskFileName = $@"ZilLion.Task.{taskConfig.TaskModule}.dll";
+                var taskClassName = taskConfig.Taskname;
                 if (!System.IO.File.Exists($@"{TaskRootPath}\{taskFileName}")) return; //当文件不存在
 
-                IJobDetail job = new JobDetailImpl(taskconfig.Jobid, GetClassInfo(taskFileName, taskClassName));
+                IJobDetail job = new JobDetailImpl(taskConfig.Taskid, GetClassInfo(taskFileName, taskClassName));
                 var trigger = new CronTriggerImpl
                 {
-                    CronExpressionString = taskconfig.Jobronexpression,
-                    Name = taskconfig.Jobid,
-                    Description = taskconfig.Jobname
+                    CronExpressionString = taskConfig.TaskExpression,
+                    Name = taskConfig.Taskid,
+                    Description = taskConfig.Taskname
                 };
                 _scheduler.ScheduleJob(job, trigger);
-                if (taskconfig.Jobstatus == 1)
+                if (taskConfig.TaskStatus == 1)
                 {
-                    var jk = new JobKey(taskconfig.Jobid);
+                    var jk = new JobKey(taskConfig.Taskid);
                     _scheduler.PauseJob(jk);
                 }
                 else
                 {
                     //LogHelper.WriteLog(string.Format("任务“{0}”启动成功,未来5次运行时间如下:", taskUtil.TaskName));
-                    var list = GetTaskeFireTime(taskconfig.Jobronexpression, 5);
+                    var list = GetTaskeFireTime(taskConfig.TaskExpression, 5);
                     foreach (var time in list)
                     {
                         //LogHelper.WriteLog(time.ToString());
@@ -197,7 +197,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
             }
             else
             {
-                throw new Exception(taskconfig.Jobronexpression + "不是正确的Cron表达式,无法启动该任务!");
+                throw new Exception(taskConfig.TaskExpression + "不是正确的Cron表达式,无法启动该任务!");
             }
         }
 

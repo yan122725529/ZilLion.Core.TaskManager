@@ -41,10 +41,7 @@ namespace ZilLion.Core.TaskManager.AppDomainTypeLoder
         /// <returns></returns>
         public object CreateInstance(string fullTypeName)
         {
-            if (LoadedAssembly == null)
-                return null;
-
-            return LoadedAssembly.CreateInstance(fullTypeName,false);
+            return LoadedAssembly == null ? null : LoadedAssembly.CreateInstance(fullTypeName,false);
         }
         /// <summary>
         /// 初始化RemoteTypeLoader

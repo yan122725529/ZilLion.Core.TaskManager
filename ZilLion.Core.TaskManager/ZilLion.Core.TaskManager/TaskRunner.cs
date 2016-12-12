@@ -14,16 +14,16 @@ namespace ZilLion.Core.TaskManager
         /// <summary>
         ///     可用作业配置
         /// </summary>
-        public IList<Taskconfig> UseableJobconfigs { get; set; }
+        public IList<TaskConfig> UseableJobconfigs { get; set; }
 
-        private readonly JobConfigRespository _jobConfigRespository = new JobConfigRespository();
+        private readonly TaskConfigRespository _taskConfigRespository = new TaskConfigRespository();
 
         private  void GetUseableJobconfigs()
         {
             if (UseableJobconfigs == null)
-                UseableJobconfigs = new List<Taskconfig>();
+                UseableJobconfigs = new List<TaskConfig>();
             UseableJobconfigs.Clear();
-            UseableJobconfigs = _jobConfigRespository.GetjobConfigs();
+            UseableJobconfigs = _taskConfigRespository.GetjobConfigs();
         }
 
         #endregion
@@ -56,7 +56,7 @@ namespace ZilLion.Core.TaskManager
         public static void InitTaskRunner(string jobConfigDbConString)
         {
             _instance = new TaskRunner();
-            TaskManagerConfig.JobConfigDbConString = jobConfigDbConString;//获得task配置库数据库连接
+            TaskManagerConfig.TaskConfigDbConString = jobConfigDbConString;//获得task配置库数据库连接
             //GetUseableJobconfigs();
             QuartzHelper.InitScheduler();//任务调度初始化成功
 
@@ -107,7 +107,7 @@ namespace ZilLion.Core.TaskManager
         public void DeleteById(string taskId)
         {
             QuartzHelper.DeleteJob(taskId);
-            //_jobConfigRespository.SaveData();//todo 保存数据库（配置表更新，任务状态表更新）
+            //_taskConfigRespository.SaveData();//todo 保存数据库（配置表更新，任务状态表更新）
         }
 
         /// <summary>
@@ -121,9 +121,9 @@ namespace ZilLion.Core.TaskManager
                 QuartzHelper.ResumeJob(taskId);
             else
                 QuartzHelper.PauseJob(taskId);
-            var config = _jobConfigRespository.GetjobConfig(taskId);
-            config.Jobstatus = status == TaskStatus.Run ? 0 : 1;
-            _jobConfigRespository.SaveData(config);
+            var config = _taskConfigRespository.GetjobConfig(taskId);
+            config.TaskStatus = status == TaskStatus.Run ? 0 : 1;
+            _taskConfigRespository.SaveData(config);
         }
 
         /// <summary>

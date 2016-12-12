@@ -9,7 +9,7 @@ namespace ZilLion.Core.TaskManager.Respository
     public class SourceContext : IDbContext
     {
 
-        public static string WeixinContextConnectionString => TaskManagerConfig.JobConfigDbConString;
+        public static string WeixinContextConnectionString => TaskManagerConfig.TaskConfigDbConString;
 
         public IDbConnection GetConnection()
         {

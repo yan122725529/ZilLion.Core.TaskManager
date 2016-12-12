@@ -70,14 +70,14 @@
     <Compile Include="AppDomainTypeLoder\TypeLoader.cs" />
     <Compile Include="Config\Taskconfig.cs" />
     <Compile Include="Config\TaskManagerConfig.cs" />
+    <Compile Include="Config\TaskRunLog.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Respository\jobConfigRespository.cs" />
+    <Compile Include="Respository\TaskConfigRespository.cs" />
     <Compile Include="Respository\SourceContext.cs" />
     <Compile Include="Respository\TaskRunLogRespository.cs" />
     <Compile Include="TaskRunner.cs" />
     <Compile Include="Unities\Quartz\CustomTriggerListener.cs" />
     <Compile Include="Unities\Quartz\QuartzHelper.cs" />
-    <Compile Include="Unities\Quartz\TaskRunLog.cs" />
     <Compile Include="Unities\File\FileHelper.cs" />
   </ItemGroup>
   <ItemGroup>
