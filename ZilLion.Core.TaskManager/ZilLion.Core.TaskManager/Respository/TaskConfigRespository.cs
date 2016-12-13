@@ -6,7 +6,7 @@ using ZilLion.Core.TaskManager.Config;
 
 namespace ZilLion.Core.TaskManager.Respository
 {
-    public class TaskConfigRespository : Respository<TaskConfig>
+    public class TaskConfigRespository : Respository<TaskConfig>, ITaskConfigRespository
     {
         public TaskConfigRespository()
         {
@@ -15,17 +15,17 @@ namespace ZilLion.Core.TaskManager.Respository
 
         public IList<TaskConfig> GetjobConfigs()
         {
-            return GetList<TaskConfig>(@"select * from task_job_config").ToList();
+            return GetList<TaskConfig>(@"select * from task_config").ToList();
         }
 
         /// <summary>
         ///     获取单条config
         /// </summary>
         /// <returns></returns>
-        public TaskConfig GetjobConfig(string jobid)
+        public TaskConfig GetjobConfigById(string jobid)
         {
             return
-                GetList<TaskConfig>(@"select * from task_job_config where jobid=@jobid and isdeleted=0", new {jobid})
+                GetList<TaskConfig>(@"select * from task_config where jobid=@jobid and isdeleted=0", new {jobid})
                     .FirstOrDefault();
         }
 

@@ -18,7 +18,7 @@ namespace ZilLion.Core.TaskManager.Config
         /// 作业说明
         /// </summary>
         public string TaskRemark { get; set; }
-      
+
         /// <summary>
         /// 作业模块名（决定使用哪个程序集）
         /// </summary>
@@ -39,10 +39,7 @@ namespace ZilLion.Core.TaskManager.Config
         /// </summary>
         public string TaskExpression { get; set; }
 
-        /// <summary>
-        /// 作业执行状态 0-运行中，1-停止
-        /// </summary>
-        public int TaskStatus { get; set; }
+
 
 
         public short IsDeleted { get; set; }
@@ -54,14 +51,14 @@ namespace ZilLion.Core.TaskManager.Config
         public TaskconfigMapper()
         {
             Table("task_config");
-            Map(f => f.Taskid).Column("taskid");
+
+            Map(f => f.Taskid).Key(KeyType.Assigned).Column("taskid");
             Map(f => f.Taskname).Column("taskname");
             Map(f => f.TaskRemark).Column("taskremark");
             Map(f => f.TaskModule).Column("taskmodule");
             Map(f => f.TaskAction).Column("taskAction");
             Map(f => f.TaskParam).Column("taskparam");
             Map(f => f.TaskExpression).Column("taskronexpression");
-            Map(f => f.TaskStatus).Column("taskstatus");
             Map(f => f.IsDeleted).Column("isdeleted");
         }
     }

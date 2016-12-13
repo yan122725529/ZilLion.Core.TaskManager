@@ -5,7 +5,7 @@ using ZilLion.Core.TaskManager.Config;
 
 namespace ZilLion.Core.TaskManager.Respository
 {
-    public class TaskRunLogRespository : Respository<TaskRunLog>
+    public class TaskRunLogRespository : Respository<TaskRunLog>, ITaskRunLogRespository
     {
         public TaskRunLogRespository()
         {

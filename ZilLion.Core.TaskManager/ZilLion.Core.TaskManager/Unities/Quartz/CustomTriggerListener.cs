@@ -1,5 +1,6 @@
 ﻿using System;
 using Quartz;
+using ZilLion.Core.TaskManager.Respository;
 
 namespace ZilLion.Core.TaskManager.Unities.Quartz
 {
@@ -8,6 +9,9 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
     /// </summary>
     public class CustomTriggerListener : ITriggerListener
     {
+        private readonly ITaskRunLogRespository _taskRunLogRespository = new TaskRunLogRespository();
+
+
         public string Name => "All_TriggerListener";
 
         /// <summary>
@@ -47,15 +51,16 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         public void TriggerComplete(ITrigger trigger, IJobExecutionContext context,
             SchedulerInstruction triggerInstructionCode)
         {
-
-            if (context.NextFireTimeUtc != null)
-            {
-                var nextRunTime = TimeZoneInfo.ConvertTimeFromUtc(context.NextFireTimeUtc.Value.DateTime, TimeZoneInfo.Local);
-            }
+            if (context.NextFireTimeUtc == null) return;
+            var nextRunTime = TimeZoneInfo.ConvertTimeFromUtc(context.NextFireTimeUtc.Value.DateTime, TimeZoneInfo.Local);
             var taskid = trigger.JobKey.Name;
-            //todo  更新到数据库
 
-            //TaskHelper.UpdateLastRunTime(trigger.JobKey.Name, );
+            #region 更新状态表
+            var runlog = _taskRunLogRespository.GetTaskRunLogById(taskid);
+            runlog.Tasknextruntime = nextRunTime;
+            runlog.Tasknextruntime = DateTime.Now;
+            _taskRunLogRespository.ModifyTaskRunLog(runlog);
+            #endregion
         }
 
         /// <summary>

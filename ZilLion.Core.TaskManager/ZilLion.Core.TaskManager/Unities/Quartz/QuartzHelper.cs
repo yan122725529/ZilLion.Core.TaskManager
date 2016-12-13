@@ -10,7 +10,9 @@ using Quartz.Impl.Triggers;
 using Quartz.Spi;
 using ZilLion.Core.TaskManager.AppDomainTypeLoder;
 using ZilLion.Core.TaskManager.Config;
+using ZilLion.Core.TaskManager.Respository;
 using ZilLion.Core.TaskManager.Unities.File;
+using ZilLion.Core.TaskManager.Unities.Reflection;
 
 namespace ZilLion.Core.TaskManager.Unities.Quartz
 {
@@ -20,6 +22,7 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
     public class QuartzHelper
     {
         private static readonly object Obj = new object();
+        private static readonly ITaskRunLogRespository TaskRunLogRespository = new TaskRunLogRespository();
 
         /// <summary>
         ///     任务程序集根目录
@@ -30,6 +33,8 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         ///     缓存任务所在程序集信息
         /// </summary>
         public static readonly Dictionary<string, Assembly> AssemblyDic = new Dictionary<string, Assembly>();
+
+        public static readonly Dictionary<string, AppDomain> AppDomainDic = new Dictionary<string, AppDomain>();
 
         private static IScheduler _scheduler;
 
@@ -79,26 +84,22 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         /// <returns></returns>
         private static Type GetClassInfo(string assemblyName, string className)
         {
-            try
+            Assembly assembly = null;
+            if (AssemblyDic.ContainsKey(assemblyName))
             {
-                Assembly assembly = null;
-                if (AssemblyDic.ContainsKey(assemblyName))
-                {
-                    assembly = AssemblyDic[assemblyName];
-                }
-                else
-                {
-                    var loader = new TypeLoader(assemblyName);
-                    assembly = loader.RemoteTypeLoader.LoadedAssembly;
-                }
-                if (assembly == null) return null;
-                var type = assembly.GetType(className, true, true);
-                return type.GetInterfaces().Any(x => x.Name.ToUpper().Contains("IJOB")) ? type : null;
+                assembly = AssemblyDic[assemblyName];
             }
-            catch (Exception ex)
+            else
             {
-                throw ex;
+                var loader = new TypeLoader(assemblyName);
+                assembly = loader.RemoteTypeLoader.LoadedAssembly;
+                AssemblyDic.Add(assemblyName, assembly);
+                if (!AppDomainDic.ContainsKey(assemblyName))
+                    AppDomainDic.Add(assemblyName, loader.RemoteDomain);
             }
+            if (assembly == null) return null;
+            var type = assembly.GetType(className, true, true);
+            return type.GetInterfaces().Any(x => x.Name.ToUpper().Contains("IJOB")) ? type : null;
         }
 
         #endregion
@@ -115,34 +116,31 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
                 return;
 
 
-            var todoTask = configs.Where(x => x.TaskStatus == 0).ToList();
-            if (todoTask.Any())
-                try
-                {
-                    if (!_scheduler.IsStarted)
-                    {
-                        //添加全局监听
-                        _scheduler.ListenerManager.AddTriggerListener(new CustomTriggerListener(),
-                            GroupMatcher<TriggerKey>.AnyGroup());
-                        _scheduler.Start();
+            if (!configs.Any()) return;
+            try
+            {
+                if (_scheduler.IsStarted) return;
+                //添加全局监听
+                _scheduler.ListenerManager.AddTriggerListener(new CustomTriggerListener(),
+                    GroupMatcher<TriggerKey>.AnyGroup());
+                _scheduler.Start();
 
-                        //获取所有执行中的任务
-                        foreach (var job in todoTask)
-                            try
-                            {
-                                ScheduleJob(job);
-                            }
-                            catch (Exception ex)
-                            {
-                                //LogHelper.WriteLog(string.Format("任务“{0}”启动失败！", taskUtil.TaskName), e);
-                            }
-                        //LogHelper.WriteLog("任务调度启动成功！");
+                //获取所有执行中的任务
+                foreach (var job in configs)
+                    try
+                    {
+                        ScheduleJob(job);
                     }
-                }
-                catch (Exception ex)
-                {
-                    //LogHelper.WriteLog("任务调度启动失败！", ex);
-                }
+                    catch (Exception ex)
+                    {
+                        //LogHelper.WriteLog(string.Format("任务“{0}”启动失败！", taskUtil.TaskName), e);
+                    }
+                //LogHelper.WriteLog("任务调度启动成功！");
+            }
+            catch (Exception ex)
+            {
+                //LogHelper.WriteLog("任务调度启动失败！", ex);
+            }
         }
 
         /// <summary>
@@ -180,20 +178,16 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
                     Description = taskConfig.Taskname
                 };
                 _scheduler.ScheduleJob(job, trigger);
-                if (taskConfig.TaskStatus == 1)
-                {
-                    var jk = new JobKey(taskConfig.Taskid);
-                    _scheduler.PauseJob(jk);
-                }
-                else
-                {
-                    //LogHelper.WriteLog(string.Format("任务“{0}”启动成功,未来5次运行时间如下:", taskUtil.TaskName));
-                    var list = GetTaskeFireTime(taskConfig.TaskExpression, 5);
-                    foreach (var time in list)
-                    {
-                        //LogHelper.WriteLog(time.ToString());
-                    }
-                }
+                var runlog = TaskRunLogRespository.GetTaskRunLogById(taskConfig.Taskid);
+                runlog.Tasknextruntime = GetTaskeFireTime(taskConfig.TaskExpression, 1).FirstOrDefault();
+                TaskRunLogRespository.ModifyTaskRunLog(runlog);
+                //if (taskConfig.TaskStatus == 1)
+                //{
+                //    var jk = new JobKey(taskConfig.Taskid);
+                //    _scheduler.PauseJob(jk);
+                //}
+                //else
+                //{
             }
             else
             {
@@ -237,13 +231,17 @@ namespace ZilLion.Core.TaskManager.Unities.Quartz
         public static void RunOnceTask(string jobKey)
         {
             var jk = new JobKey(jobKey);
+
+           
+
+
             if (_scheduler.CheckExists(jk))
             {
                 var jobDetail = _scheduler.GetJobDetail(jk);
                 var type = jobDetail.JobType;
-                //var instance = type.FastNew();
+                var instance = type.FastNew();
                 var method = type.GetMethod("Execute");
-                //method.Invoke(instance, new object[] { null });
+                method.Invoke(instance, new object[] {null});
                 //LogHelper.WriteLog(string.Format("任务“{0}”立即运行", JobKey));
             }
         }

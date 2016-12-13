@@ -52,6 +52,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Management" />
     <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -72,6 +73,8 @@
     <Compile Include="Config\TaskManagerConfig.cs" />
     <Compile Include="Config\TaskRunLog.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Respository\ITaskConfigRespository.cs" />
+    <Compile Include="Respository\ITaskRunLogRespository.cs" />
     <Compile Include="Respository\TaskConfigRespository.cs" />
     <Compile Include="Respository\SourceContext.cs" />
     <Compile Include="Respository\TaskRunLogRespository.cs" />
@@ -79,6 +82,11 @@
     <Compile Include="Unities\Quartz\CustomTriggerListener.cs" />
     <Compile Include="Unities\Quartz\QuartzHelper.cs" />
     <Compile Include="Unities\File\FileHelper.cs" />
+    <Compile Include="Unities\Reflection\DynamicMethodEmit.cs" />
+    <Compile Include="Unities\Reflection\MethodWrapper.cs" />
+    <Compile Include="Unities\Reflection\PropertyWrapper.cs" />
+    <Compile Include="Unities\Reflection\ReflectionExtensions.cs" />
+    <Compile Include="Unities\SysHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
