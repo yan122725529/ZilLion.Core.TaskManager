@@ -46,10 +46,6 @@
       <HintPath>..\packages\DapperExtensions.1.5.0\lib\net45\DapperExtensions.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Quartz, Version=2.4.1.0, Culture=neutral, PublicKeyToken=f6b8c98a402cc8a4, processorArchitecture=MSIL">
-      <HintPath>..\packages\Quartz.2.4.1\lib\net40\Quartz.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Management" />
@@ -60,15 +56,8 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="Z.ExtensionMethods, Version=2.0.10.0, Culture=neutral, PublicKeyToken=59b66d028979105b, processorArchitecture=MSIL">
-      <HintPath>..\packages\Z.ExtensionMethods.2.0.10\lib\net45\Z.ExtensionMethods.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AppDomainTypeLoder\PluginManager.cs" />
-    <Compile Include="AppDomainTypeLoder\RemoteTypeLoader.cs" />
-    <Compile Include="AppDomainTypeLoder\TypeLoader.cs" />
     <Compile Include="Config\Taskconfig.cs" />
     <Compile Include="Config\TaskManagerConfig.cs" />
     <Compile Include="Config\TaskRunLog.cs" />
@@ -79,26 +68,39 @@
     <Compile Include="Respository\SourceContext.cs" />
     <Compile Include="Respository\TaskRunLogRespository.cs" />
     <Compile Include="TaskRunner.cs" />
-    <Compile Include="Unities\Quartz\CustomTriggerListener.cs" />
-    <Compile Include="Unities\Quartz\QuartzHelper.cs" />
+    <Compile Include="Quartz\CustomTriggerListener.cs" />
     <Compile Include="Unities\File\FileHelper.cs" />
+    <Compile Include="Quartz\SchedulerContainer.cs" />
     <Compile Include="Unities\Reflection\DynamicMethodEmit.cs" />
     <Compile Include="Unities\Reflection\MethodWrapper.cs" />
     <Compile Include="Unities\Reflection\PropertyWrapper.cs" />
     <Compile Include="Unities\Reflection\ReflectionExtensions.cs" />
-    <Compile Include="Unities\SysHelper.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\AppDomainToolkit\AppDomainToolkit.csproj">
+      <Project>{2A53F4FB-0918-485C-9266-BD8FF3FA0D84}</Project>
+      <Name>AppDomainToolkit</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\quartznet-2.4.1\src\Quartz\Quartz.2010.csproj">
+      <Project>{aef8823b-e45b-4b35-a4d0-c08c1196d017}</Project>
+      <Name>Quartz.2010</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ZilLion.Core.DatabaseWrapper\ZilLion.Core.DatabaseWrapper.csproj">
       <Project>{ae052494-c7ad-425e-98d4-bad57fe3c042}</Project>
       <Name>ZilLion.Core.DatabaseWrapper</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <WCFMetadata Include="Service References\" />
+    <ProjectReference Include="..\ZilLion.Core.Log\ZilLion.Core.Log.csproj">
+      <Project>{671dbc63-3eec-4fc7-8cca-3164139b3a24}</Project>
+      <Name>ZilLion.Core.Log</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ZilLion.Core.Unities\ZilLion.Core.Unities.csproj">
+      <Project>{beeffd98-18a9-4f2d-ba97-9d42b9401781}</Project>
+      <Name>ZilLion.Core.Unities</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Config\作业配置库表结构.sql" />

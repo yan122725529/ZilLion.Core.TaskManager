@@ -3,6 +3,7 @@ using DapperExtensions.Mapper;
 
 namespace ZilLion.Core.TaskManager.Config
 {
+    [Serializable]
     public class TaskRunLog
     {
        

@@ -1,7 +1,9 @@
-﻿using DapperExtensions.Mapper;
+﻿using System;
+using DapperExtensions.Mapper;
 
 namespace ZilLion.Core.TaskManager.Config
 {
+    [Serializable]
     public class TaskConfig
     {
         /// <summary>
@@ -58,7 +60,7 @@ namespace ZilLion.Core.TaskManager.Config
             Map(f => f.TaskModule).Column("taskmodule");
             Map(f => f.TaskAction).Column("taskAction");
             Map(f => f.TaskParam).Column("taskparam");
-            Map(f => f.TaskExpression).Column("taskronexpression");
+            Map(f => f.TaskExpression).Column("taskexpression");
             Map(f => f.IsDeleted).Column("isdeleted");
         }
     }

@@ -59,6 +59,14 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\AppDomainToolkit\AppDomainToolkit.csproj">
+      <Project>{2A53F4FB-0918-485C-9266-BD8FF3FA0D84}</Project>
+      <Name>AppDomainToolkit</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TaskPlugin\TaskPlugin.csproj">
+      <Project>{61aa98e0-1997-4836-8789-36dd3fa4b9cc}</Project>
+      <Name>TaskPlugin</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ZilLion.Core.DatabaseWrapper\ZilLion.Core.DatabaseWrapper.csproj">
       <Project>{ae052494-c7ad-425e-98d4-bad57fe3c042}</Project>
       <Name>ZilLion.Core.DatabaseWrapper</Name>

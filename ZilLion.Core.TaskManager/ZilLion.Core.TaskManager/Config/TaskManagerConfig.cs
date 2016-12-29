@@ -1,8 +1,11 @@
-﻿namespace ZilLion.Core.TaskManager.Config
+﻿using System;
+
+namespace ZilLion.Core.TaskManager.Config
 {
     /// <summary>
     /// 组件关键配置
     /// </summary>
+    [Serializable]
     public static class TaskManagerConfig
     {
         /// <summary>

@@ -1,14 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using AppDomainToolkit;
+using ZilLion.Core.Log;
 using ZilLion.Core.TaskManager.Config;
+using ZilLion.Core.TaskManager.Quartz;
 using ZilLion.Core.TaskManager.Respository;
-using ZilLion.Core.TaskManager.Unities;
-using ZilLion.Core.TaskManager.Unities.Quartz;
+using ZilLion.Core.TaskManager.Unities.File;
 
 namespace ZilLion.Core.TaskManager
 {
     public class TaskRunner
     {
+        private static bool _hasInited;
+
+        /// <summary>
+        ///     作业执行appdomain
+        /// </summary>
+        public readonly Dictionary<string, IAppDomainContext> AppDomainContextDic =
+            new Dictionary<string, IAppDomainContext>();
+
+        /// <summary>
+        ///     可用作业配置
+        /// </summary>
+        public readonly Dictionary<string, IList<TaskConfig>> ConfigDic = new Dictionary<string, IList<TaskConfig>>();
+
         #region 初始化
 
         /// <summary>
@@ -18,10 +35,15 @@ namespace ZilLion.Core.TaskManager
         /// <param name="taskServerId"></param>
         public static void InitTaskRunner(string jobConfigDbConString, string taskServerId)
         {
+            if (_hasInited)
+                throw new Exception("TaskRunner职能初始化一次");
             _instance = new TaskRunner();
             TaskManagerConfig.TaskConfigDbConString = jobConfigDbConString; //获得task配置库数据库连接
             TaskManagerConfig.TaskServerId = taskServerId; //设置TaskRunner寄宿的serverid
-            QuartzHelper.InitScheduler(); //任务调度初始化成功
+
+
+            _hasInited = true;
+            //QuartzHelper.InitScheduler(); //任务调度初始化成功
 
 
             //todo LOG(初始化成功)
@@ -32,20 +54,19 @@ namespace ZilLion.Core.TaskManager
 
         #region 作业配置
 
-        /// <summary>
-        ///     可用作业配置
-        /// </summary>
-        public IList<TaskConfig> UseableJobconfigs { get; set; }
+        //public IList<TaskConfig> UseableJobconfigs { get; set; }
 
         private readonly ITaskConfigRespository _taskConfigRespository = new TaskConfigRespository();
         private readonly ITaskRunLogRespository _taskRunLogRespository = new TaskRunLogRespository();
 
         private void GetUseableJobconfigs()
         {
-            if (UseableJobconfigs == null)
-                UseableJobconfigs = new List<TaskConfig>();
-            UseableJobconfigs.Clear();
-            UseableJobconfigs = _taskConfigRespository.GetjobConfigs();
+            ConfigDic.Clear();
+            foreach (var config in _taskConfigRespository.GetjobConfigs())
+                if (ConfigDic.ContainsKey(config.TaskModule))
+                    ConfigDic[config.TaskModule].Add(config);
+                else
+                    ConfigDic.Add(config.TaskModule, new List<TaskConfig> {config});
         }
 
         #endregion
@@ -63,7 +84,6 @@ namespace ZilLion.Core.TaskManager
         {
             if (_instance == null)
                 throw new Exception("TaskRunner尚未初始化，请调用InitTastRunner方法初始化。");
-
             return _instance;
         }
 
@@ -77,25 +97,55 @@ namespace ZilLion.Core.TaskManager
         public void StartAllScheduler()
         {
             GetUseableJobconfigs(); //读取任务配置
-            foreach (var config in UseableJobconfigs)
-            {
-                var runlog = new TaskRunLog
+            foreach (var configs in ConfigDic.Values)
+                foreach (var config in configs)
                 {
-                    Pcip = Computer.IpAddress,
-                    Pcmac = Computer.MacAddress,
-                    Pcname = Computer.ComputerName,
-                    Taskid = config.Taskid,
-                    Taskname = config.Taskname,
-                    Taskremark = config.TaskRemark,
-                    Taskserverid = TaskManagerConfig.TaskServerId,
-                    Taskstatus = 0,
-                    Tasknextruntime = DateTime.Now,
-                    Tasklastruntime = DateTime.Now,
-                };
-                _taskRunLogRespository.AddTaskRunLog(runlog);
-            }
-            QuartzHelper.StartScheduler(UseableJobconfigs); //开始任务
+                    var runlog = new TaskRunLog
+                    {
+                        Pcip = Computer.IpAddress,
+                        Pcmac = Computer.MacAddress,
+                        Pcname = Computer.ComputerName,
+                        Taskid = config.Taskid,
+                        Taskname = config.Taskname,
+                        Taskremark = config.TaskRemark,
+                        Taskserverid = TaskManagerConfig.TaskServerId,
+                        Taskstatus = 0,
+                        Tasknextruntime = DateTime.Now,
+                        Tasklastruntime = DateTime.Now
+                    };
+                    _taskRunLogRespository.AddTaskRunLog(runlog);
+                }
 
+            #region 根据模块创建新的appdomain,并开始任务
+
+            foreach (var config in ConfigDic)
+            {
+                var setup = new AppDomainSetup
+                {
+                    ApplicationName = $"JobLoader_{config.Key}",
+                    ApplicationBase = FileHelper.GetRootPath(),
+                    PrivateBinPath = "ZilLionTask",
+                    CachePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "JobCachePath"),
+                    ShadowCopyFiles = "true"
+                };
+                setup.ShadowCopyDirectories = string.Concat(setup.ApplicationBase, ";", setup.PrivateBinPath);
+
+                var remoteDomain = AppDomain.CreateDomain($"{config.Key}Domain_{Guid.NewGuid():N}", null, setup);
+                var context = AppDomainContext.Wrap(remoteDomain);
+                if (!AppDomainContextDic.ContainsKey(config.Key))
+                    AppDomainContextDic.Add(config.Key, context);
+
+                RemoteAction.Invoke(context.Domain, config.Key, config.Value, (k, v) =>
+                {
+                    Debug.WriteLine(AppDomain.CurrentDomain.FriendlyName);
+                    var container = SchedulerContainer.GetContainerInstance();
+                    container.InitScheduler(k, v);
+                    container.StartScheduler();
+                    Debug.WriteLine("first" + SchedulerContainer.GetContainerInstance().GetHashCode());
+                });
+            }
+
+            #endregion
         }
 
         /// <summary>
@@ -103,18 +153,22 @@ namespace ZilLion.Core.TaskManager
         /// </summary>
         public void StopAllTask()
         {
-            QuartzHelper.StopSchedule();
-            _taskRunLogRespository.ClearTaskRunLog();// 清空执行状态表
+            foreach (var context in AppDomainContextDic.Values)
+                RemoteAction.Invoke(context.Domain, () => { SchedulerContainer.GetContainerInstance().StopSchedule(); });
+            _taskRunLogRespository.ClearTaskRunLog(); // 清空执行状态表
         }
 
         /// <summary>
         ///     根据ID立即执行
         /// </summary>
-        /// <param name="taskId"></param>
-        public void RunOnceTaskById(string taskId)
+        /// <param name="config"></param>
+        public void RunOnceTaskById(TaskConfig config)
         {
-            QuartzHelper.RunOnceTask(taskId);
-            var runlog = _taskRunLogRespository.GetTaskRunLogById(taskId);
+            if (!AppDomainContextDic.ContainsKey(config.TaskModule)) return;
+            var context = AppDomainContextDic[config.TaskModule];
+            RemoteAction.Invoke(context.Domain, config.Taskid,
+                taskid => { SchedulerContainer.GetContainerInstance().RunOnceTask(taskid); });
+            var runlog = _taskRunLogRespository.GetTaskRunLogById(config.Taskid);
             runlog.Tasklastruntime = DateTime.Now;
             _taskRunLogRespository.ModifyTaskRunLog(runlog);
         }
@@ -122,41 +176,38 @@ namespace ZilLion.Core.TaskManager
         /// <summary>
         ///     删除指定id任务
         /// </summary>
-        /// <param name="taskId">任务id</param>
-        public void DeleteById(string taskId)
+        /// <param name="config"></param>
+        public void DeleteById(TaskConfig config)
         {
-            QuartzHelper.DeleteJob(taskId);
-
-            #region 更新配置和运行状态表
-
-            var config = _taskConfigRespository.GetjobConfigById(taskId);
+            if (!AppDomainContextDic.ContainsKey(config.TaskModule)) return;
+            var context = AppDomainContextDic[config.TaskModule];
+            RemoteAction.Invoke(context.Domain, config.Taskid,
+                taskid => { SchedulerContainer.GetContainerInstance().DeleteJob(taskid); });
             config.IsDeleted = 1;
             _taskConfigRespository.SaveData(config);
-
-            var runlog = _taskRunLogRespository.GetTaskRunLogById(taskId);
+            var runlog = _taskRunLogRespository.GetTaskRunLogById(config.Taskid);
             _taskRunLogRespository.RemoveTaskRunLog(runlog);
-
-            #endregion
         }
 
+
         /// <summary>
-        ///     更新任务运行状态
+        ///     更新任务运行状态//todo 拆分为停止和恢复两个过程
         /// </summary>
         /// <param name="taskId">任务id</param>
         /// <param name="status">任务状态</param>
         public void UpdateTaskStatus(string taskId, TaskStatus status)
         {
-            if (status == TaskStatus.Run)
-                QuartzHelper.ResumeJob(taskId);
-            else
-                QuartzHelper.PauseJob(taskId);
+            //if (status == TaskStatus.Run)
+            //    QuartzHelper.ResumeJob(taskId);
+            //else
+            //    QuartzHelper.PauseJob(taskId);
             var runlog = _taskRunLogRespository.GetTaskRunLogById(taskId);
             runlog.Taskstatus = (short) (status == TaskStatus.Run ? 0 : 1);
             _taskRunLogRespository.ModifyTaskRunLog(runlog);
         }
 
         /// <summary>
-        /// TODO    更新任务（更新来源：1：配置库有变化（增删改查）；2：监控到task文件夹变化）
+        ///     TODO    更新任务（更新来源：1：配置库有变化（增删改查）；2：监控到task文件夹变化）
         /// </summary>
         /// <param name="taskId"></param>
         public void RefreshChangedTask(string taskId)
