@@ -76,7 +76,7 @@ namespace ZilLion.Core.QuartzWrapper.Quartz
 
             var runlog = _taskRunLogRespository.GetTaskRunLogById(taskid);
             runlog.Tasknextruntime = nextRunTime;
-            runlog.Tasknextruntime = DateTime.Now;
+            runlog.Tasklastruntime = DateTime.Now;
             _taskRunLogRespository.SaveTaskRunLog(runlog);
 
             #endregion

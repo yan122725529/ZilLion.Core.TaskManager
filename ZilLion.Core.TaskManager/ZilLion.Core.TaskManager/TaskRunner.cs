@@ -142,10 +142,10 @@ namespace ZilLion.Core.TaskManager
                 if (!AppDomainContextDic.ContainsKey(config.Key))
                     AppDomainContextDic.Add(config.Key, context);
 
-                RemoteAction.Invoke(context.Domain, config.Key, config.Value, (k, v) =>
+                RemoteAction.Invoke(context.Domain, config.Key, config.Value, _runnerConfig, (k, v, runnerconfig) =>
                 {
                     var container = SchedulerContainer.GetContainerInstance();
-                    container.InitScheduler(k, v, _runnerConfig);
+                    container.InitScheduler(k, v, runnerconfig);
                     container.StartScheduler();
                 });
             }
