@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
+using System.Data.SQLite;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Dapper;
 using DapperExtensions;
 using DapperExtensions.Mapper;
+using Oracle.ManagedDataAccess.Client;
 
 namespace ZilLion.Core.DatabaseWrapper.Dapper
 {
@@ -17,6 +20,9 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
     {
         protected IDbContext Context;
 
+
+        protected DataBaseType CurrentDataBaseType;
+
         public Respository()
         {
 
@@ -25,12 +31,28 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
         public Respository(IDbContext source)
         {
             Context = source;
+            GetDataBaseType();
+        }
+
+        private void GetDataBaseType()
+        {
+            CurrentDataBaseType = DataBaseType.SqlServer;//默认
+            var sqlconnection = Context.GetConnection();
+            if (sqlconnection == null) return;
+            if (sqlconnection is SqlConnection)
+                CurrentDataBaseType = DataBaseType.SqlServer;
+            if (sqlconnection is SQLiteConnection)
+                CurrentDataBaseType = DataBaseType.Sqlite;
+
+            if (sqlconnection is OracleConnection)
+                CurrentDataBaseType = DataBaseType.Oracle;
         }
 
 
         public ClassMapper<TEntity> GetMap()
         {
-            return DapperExtensions.DapperExtensions.GetMap<TEntity>() as ClassMapper<TEntity>;
+
+            return DapperExtensions.DapperExtensions.GetMap<TEntity>(CurrentDataBaseType) as ClassMapper<TEntity>;
         }
 
 
@@ -41,7 +63,6 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
         /// <returns></returns>
         protected dynamic Add(TEntity item)
         {
-            Func<IDbConnection, IDbTransaction, object, object> action = null;
             var currentUnitOfWork = UnitOfWork.GetCurrentUnitOfWork();
             if ((currentUnitOfWork == null) ||
                 (currentUnitOfWork.Option == UnitOfWorkOption.Suppress))
@@ -53,10 +74,6 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
                     writeConnection.Open();
                     obj2 = writeConnection.Insert(item, null, null);
                 }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
                 finally
                 {
                     writeConnection.Close();
@@ -64,91 +81,17 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
                 return obj2;
             }
             {
-                action =
-                    (conn, tran, oitem) => conn.Insert((TEntity) oitem, tran, null);
-                var mapper = DapperExtensions.DapperExtensions.GetMap<TEntity>();
+                Func<IDbConnection, IDbTransaction, object, object> action =
+                    (conn, tran, oitem) => conn.Insert((TEntity)oitem, tran, null);
+                var mapper = DapperExtensions.DapperExtensions.GetMap<TEntity>(CurrentDataBaseType);
                 var properties = mapper.Properties;
                 var propertyMap =
                     properties.Where(p => p.Name == "Id").SingleOrDefault(p => p.ColumnName.IndexOf('.') != -1);
                 currentUnitOfWork.ChangeOperator(action, Context, item, propertyMap);
                 return null;
             }
-            return null;
         }
 
-        /// <summary>
-        ///     添加实体
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        protected dynamic AddModel<T>(T item) where T : class, new()
-        {
-            Func<IDbConnection, IDbTransaction, object, object> action = null;
-            var currentUnitOfWork = UnitOfWork.GetCurrentUnitOfWork();
-            if ((currentUnitOfWork == null) ||
-                (currentUnitOfWork.Option == UnitOfWorkOption.Suppress))
-            {
-                var writeConnection = Context.GetConnection();
-                object obj2 = null;
-                try
-                {
-                    writeConnection.Open();
-                    obj2 = writeConnection.Insert(item, null, null);
-                }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
-                finally
-                {
-                    writeConnection.Close();
-                }
-                return obj2;
-            }
-            {
-                action =
-                    (conn, tran, oitem) => conn.Insert((T) oitem, tran, null);
-                var mapper = DapperExtensions.DapperExtensions.GetMap<T>();
-                var properties = mapper.Properties;
-                var propertyMap =
-                    properties.Where(p => p.Name == "Id").SingleOrDefault(p => p.ColumnName.IndexOf('.') != -1);
-                currentUnitOfWork.ChangeOperator(action, Context, item, propertyMap);
-                return null;
-            }
-            return null;
-        }
-
-        /// <summary>
-        ///     执行SQL,映射实体
-        /// </summary>
-        /// <param name="sql"></param>
-        /// <param name="parameters"></param>
-        protected void Execute(string sql, dynamic parameters = null)
-        {
-            Func<IDbConnection, IDbTransaction, object, object> action = null;
-            var currentUnitOfWork = UnitOfWork.GetCurrentUnitOfWork();
-            if ((currentUnitOfWork == null) ||
-                (currentUnitOfWork.Option == UnitOfWorkOption.Suppress))
-            {
-                var writeConnection = Context.GetConnection();
-                try
-                {
-                    writeConnection.Open();
-                    SqlMapper.Execute(writeConnection, sql, parameters);
-                }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
-                finally
-                {
-                    writeConnection.Close();
-                }
-            }
-            if (currentUnitOfWork == null) return;
-            action = (conn, tran, entity) => SqlMapper.Execute(conn, sql, parameters, tran);
-            currentUnitOfWork.ChangeOperator(action, Context);
-        }
 
         /// <summary>
         ///     获取所有实体
@@ -158,63 +101,13 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
         {
             IEnumerable<TEntity> list = null;
             NoLockInvoke(
-                delegate(IDbConnection conn, IDbTransaction tran)
+                delegate (IDbConnection conn, IDbTransaction tran)
                 {
                     list = conn.GetList<TEntity>(null, null, tran, null, false);
                 });
             return list;
         }
 
-        /// <summary>
-        ///     获取所有实体
-        /// </summary>
-        /// <returns></returns>
-        protected IEnumerable<T> GetAllModel<T>(object predicate = null) where T : class, new()
-        {
-            IEnumerable<T> list = null;
-            NoLockInvoke(
-                delegate(IDbConnection conn, IDbTransaction tran)
-                {
-                    list = conn.GetList<T>(predicate, null, tran, null, false);
-                });
-            return list;
-        }
-
-        /// <summary>
-        ///     获取单个标量值
-        /// </summary>
-        /// <typeparam name="TU"></typeparam>
-        /// <param name="sql"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        protected TU? GetDataByScalar<TU>(string sql, dynamic parameters = null) where TU : struct
-        {
-            if (IsChangeSqlString(sql))
-                throw new Exception("sql语句错误,执行的是查询方法,但SQL语句包含更新代码,SQL语句:" + sql);
-            TU? value = null;
-            var type = typeof(TU);
-            NoLockInvoke(delegate(IDbConnection conn, IDbTransaction tran)
-            {
-                IEnumerable<object> values = SqlMapper.Query(conn,  sql, parameters, tran);
-                value = (TU?) values.SingleOrDefault();
-            });
-            return value;
-        }
-
-        protected string GetDataByScalarString(string sql, dynamic parameters = null)
-        {
-            if (IsChangeSqlString(sql))
-                throw new Exception("sql语句错误,执行的是查询方法,但SQL语句包含更新代码,SQL语句:" + sql);
-            string value = null;
-            var type = typeof(string);
-            NoLockInvoke(delegate(IDbConnection conn, IDbTransaction tran)
-            {
-                IEnumerable<object> values = SqlMapper.Query(conn,  sql, parameters, tran);
-                var singleOrDefault = values.SingleOrDefault();
-                if (singleOrDefault != null) value = singleOrDefault.ToString();
-            });
-            return value;
-        }
 
         /// <summary>
         ///     根据id获取实体
@@ -225,32 +118,13 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
         {
             var entity = default(TEntity);
             NoLockInvoke(
-                delegate(IDbConnection conn, IDbTransaction tran)
+                delegate (IDbConnection conn, IDbTransaction tran)
                 {
-                    entity = (TEntity) DapperExtensions.DapperExtensions.Get<TEntity>(conn, id, tran);
+                    entity = (TEntity)DapperExtensions.DapperExtensions.Get<TEntity>(conn, id, tran, null, CurrentDataBaseType);
                 });
             return entity;
         }
 
-        /// <summary>
-        ///     根据SQL获取实体列表
-        /// </summary>
-        /// <typeparam name="TU"></typeparam>
-        /// <param name="sql"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public IEnumerable<TU> GetList<TU>(string sql, dynamic parameters = null)
-        {
-            if (IsChangeSqlString(sql))
-                throw new Exception("sql语句错误,执行的是查询方法,但SQL语句包含更新代码,SQL语句:" + sql);
-            IEnumerable<TU> list = null;
-            NoLockInvoke(
-                delegate(IDbConnection conn, IDbTransaction tran)
-                {
-                    list = (IEnumerable<TU>) SqlMapper.Query<TU>(conn, sql, parameters, tran);
-                });
-            return list;
-        }
 
         protected IEnumerable<TEntity> GetList(string sql, dynamic parameters = null)
         {
@@ -258,9 +132,9 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
                 throw new Exception("sql语句错误,执行的是查询方法,但SQL语句包含更新代码,SQL语句:" + sql);
             IEnumerable<TEntity> list = null;
             NoLockInvoke(
-                delegate(IDbConnection conn, IDbTransaction tran)
+                delegate (IDbConnection conn, IDbTransaction tran)
                 {
-                    list = (IEnumerable<TEntity>) SqlMapper.Query<TEntity>(conn, sql, parameters, tran);
+                    list = (IEnumerable<TEntity>)SqlMapper.Query<TEntity>(conn, sql, parameters, tran);
                 });
             return list;
         }
@@ -270,7 +144,7 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
         /// </summary>
         /// <param name="sql"></param>
         /// <returns></returns>
-        protected bool IsChangeSqlString(string sql)
+        private bool IsChangeSqlString(string sql)
         {
             sql = sql.Trim().ToLower();
             return Regex.IsMatch(sql, "^(update|delete|insert|create|alter|drop|truncate)") ||
@@ -283,10 +157,9 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
         /// <param name="item"></param>
         protected void Modify(TEntity item)
         {
-            Func<IDbConnection, IDbTransaction, object, object> action = null;
             var currentUnitOfWork = UnitOfWork.GetCurrentUnitOfWork();
             if ((currentUnitOfWork == null) ||
-                ((currentUnitOfWork != null) && (currentUnitOfWork.Option == UnitOfWorkOption.Suppress)))
+                (currentUnitOfWork.Option == UnitOfWorkOption.Suppress))
             {
                 var writeConnection = Context.GetConnection();
                 try
@@ -294,53 +167,46 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
                     writeConnection.Open();
                     writeConnection.Update(item, null, null);
                 }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
+
                 finally
                 {
                     writeConnection.Close();
                 }
             }
-            else if (currentUnitOfWork != null)
+            else
             {
-                if (action == null)
-                    action = (conn, tran, entity) => conn.Update(item, tran, null);
+                Func<IDbConnection, IDbTransaction, object, object> action =
+                    (conn, tran, entity) => conn.Update(item, tran, null);
                 currentUnitOfWork.ChangeOperator(action, Context);
             }
         }
 
         /// <summary>
-        ///     更新实体
+        ///     删除实体
         /// </summary>
         /// <param name="item"></param>
-        protected void ModifyModel<T>(T item) where T : class, new()
+        protected void Remove(TEntity item)
         {
-            Func<IDbConnection, IDbTransaction, object, object> action = null;
             var currentUnitOfWork = UnitOfWork.GetCurrentUnitOfWork();
             if ((currentUnitOfWork == null) ||
-                ((currentUnitOfWork != null) && (currentUnitOfWork.Option == UnitOfWorkOption.Suppress)))
+                (currentUnitOfWork.Option == UnitOfWorkOption.Suppress))
             {
                 var writeConnection = Context.GetConnection();
                 try
                 {
                     writeConnection.Open();
-                    writeConnection.Update(item, null, null);
+                    writeConnection.Delete(item, null, null);
                 }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
+
                 finally
                 {
                     writeConnection.Close();
                 }
             }
-            else if (currentUnitOfWork != null)
+            else
             {
-                if (action == null)
-                    action = (conn, tran, entity) => conn.Update(item, tran, null);
+                Func<IDbConnection, IDbTransaction, object, object> action =
+                    (conn, tran, entity) => conn.Delete(item, tran, null);
                 currentUnitOfWork.ChangeOperator(action, Context);
             }
         }
@@ -351,6 +217,7 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
             {
                 try
                 {
+                    
                     connection.Open();
                     using (var transaction = connection.BeginTransaction())
                     {
@@ -358,78 +225,10 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
                         transaction.Commit();
                     }
                 }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
                 finally
                 {
                     connection.Close();
                 }
-            }
-        }
-
-        /// <summary>
-        ///     删除实体
-        /// </summary>
-        /// <param name="item"></param>
-        protected void Remove(TEntity item)
-        {
-            Func<IDbConnection, IDbTransaction, object, object> action = null;
-            var currentUnitOfWork = UnitOfWork.GetCurrentUnitOfWork();
-            if ((currentUnitOfWork == null) ||
-                ((currentUnitOfWork != null) && (currentUnitOfWork.Option == UnitOfWorkOption.Suppress)))
-            {
-                var writeConnection = Context.GetConnection();
-                try
-                {
-                    writeConnection.Open();
-                    writeConnection.Delete(item, null, null);
-                }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
-                finally
-                {
-                    writeConnection.Close();
-                }
-            }
-            else if (currentUnitOfWork != null)
-            {
-                if (action == null)
-                    action = (conn, tran, entity) => conn.Delete(item, tran, null);
-                currentUnitOfWork.ChangeOperator(action, Context);
-            }
-        }
-
-        protected void RemoveModel<T>(T item) where T : class, new()
-        {
-            Func<IDbConnection, IDbTransaction, object, object> action = null;
-            var currentUnitOfWork = UnitOfWork.GetCurrentUnitOfWork();
-            if ((currentUnitOfWork == null) ||
-                ((currentUnitOfWork != null) && (currentUnitOfWork.Option == UnitOfWorkOption.Suppress)))
-            {
-                var writeConnection = Context.GetConnection();
-                try
-                {
-                    writeConnection.Open();
-                    writeConnection.Delete(item, null, null);
-                }
-                catch (Exception ex)
-                {
-                    throw ex;
-                }
-                finally
-                {
-                    writeConnection.Close();
-                }
-            }
-            else if (currentUnitOfWork != null)
-            {
-                if (action == null)
-                    action = (conn, tran, entity) => conn.Delete(item, tran, null);
-                currentUnitOfWork.ChangeOperator(action, Context);
             }
         }
     }

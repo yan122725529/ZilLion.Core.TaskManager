@@ -4,6 +4,8 @@ using System.IO;
 using System.Text;
 using Exceptionless;
 using Exceptionless.Logging;
+using ZilLion.Core.Unities.UnitiesMethods;
+
 
 namespace ZilLion.Core.Log
 {
@@ -177,7 +179,7 @@ namespace ZilLion.Core.Log
                         Directory.CreateDirectory(path);
 #endif
                     if (!Directory.Exists(path)) return;
-                    var logName = $@"ZiLion_Log_{DateTime.Now:yyyyMMddHH}.TXT";
+                    var logName = $@"ZiLion_ErrorLog_{DateTime.Now:yyyyMMddHH}.TXT";
                     var stream = new StreamWriter(path + logName, true, Encoding.Default);
                     stream.WriteLine(info.ToString());
                     stream.Flush();

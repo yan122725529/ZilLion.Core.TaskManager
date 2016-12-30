@@ -47,6 +47,7 @@
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data.Entity.Design" />
     <Reference Include="System.Data.Services.Client" />
@@ -854,6 +855,10 @@
     <Compile Include="ExtensionMethods\IO\System.IO.Stream\Stream.ReadToEnd.cs" />
     <Compile Include="ExtensionMethods\IO\System.IO.Stream\Stream.ToByteArray.cs" />
     <Compile Include="ExtensionMethods\IO\System.IO.Stream\Stream.ToMD5Hash.cs" />
+    <Compile Include="ExtensionMethods\Reflection\CreateInstance\DynamicMethodEmit.cs" />
+    <Compile Include="ExtensionMethods\Reflection\CreateInstance\MethodWrapper.cs" />
+    <Compile Include="ExtensionMethods\Reflection\CreateInstance\PropertyWrapper.cs" />
+    <Compile Include="ExtensionMethods\Reflection\CreateInstance\ReflectionExtensions.cs" />
     <Compile Include="ExtensionMethods\Reflection\Dynamic\System.Dynamic.cs" />
     <Compile Include="ExtensionMethods\Reflection\GetDeclaration\ConstructorInfo.GetDeclaration.cs" />
     <Compile Include="ExtensionMethods\Reflection\GetDeclaration\EvenInfo.GetDeclaration.cs" />

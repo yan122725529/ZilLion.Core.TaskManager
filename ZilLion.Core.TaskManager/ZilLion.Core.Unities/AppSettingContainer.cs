@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 
 namespace ZilLion.Core.Unities
 {
@@ -27,7 +28,15 @@ namespace ZilLion.Core.Unities
                 throw new Exception("AppSettingContainer只能初始化一次");
 
             _saveSetingAction = saveSetingAction;
-
+            //获取APPCONFIG
+            foreach (var appkey in ConfigurationManager.AppSettings.AllKeys)
+                _appSetting.Add(appkey,
+                    new AppSettingData
+                    {
+                        SettingData = ConfigurationManager.AppSettings[appkey],
+                        IsReadOnly = true,
+                        SetingSource = SetingSource.Sysconfig
+                    });
             if (initSetingFunc == null) return;
             foreach (var setting in initSetingFunc())
                 _appSetting.Add(setting.Key.ToLower(), setting.Value);
@@ -51,7 +60,6 @@ namespace ZilLion.Core.Unities
             settingData.SettingData = value;
             _saveSetingAction?.Invoke(key.ToLower(), settingData);
         }
-
 
 
         public static void InsertAppSetting(string key, AppSettingData value)

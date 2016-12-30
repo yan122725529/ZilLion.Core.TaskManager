@@ -44,8 +44,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\quartznet-2.4.1\src\Quartz\Quartz.2010.csproj">
-      <Project>{AEF8823B-E45B-4B35-A4D0-C08C1196D017}</Project>
+    <ProjectReference Include="..\SharedResources\quartznet-2.4.1\src\Quartz\Quartz.2010.csproj">
+      <Project>{aef8823b-e45b-4b35-a4d0-c08c1196d017}</Project>
       <Name>Quartz.2010</Name>
     </ProjectReference>
     <ProjectReference Include="..\ZilLion.Core.Log\ZilLion.Core.Log.csproj">

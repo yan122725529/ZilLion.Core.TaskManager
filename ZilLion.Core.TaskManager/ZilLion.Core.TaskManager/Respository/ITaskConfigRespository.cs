@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using ZilLion.Core.TaskManager.Config;
+using ZilLion.Core.QuartzWrapper.Config;
 
 namespace ZilLion.Core.TaskManager.Respository
 {

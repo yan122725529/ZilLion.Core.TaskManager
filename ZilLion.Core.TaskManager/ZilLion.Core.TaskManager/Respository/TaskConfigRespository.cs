@@ -2,20 +2,23 @@
 using System.Collections.Generic;
 using System.Linq;
 using ZilLion.Core.DatabaseWrapper.Dapper;
-using ZilLion.Core.TaskManager.Config;
+using ZilLion.Core.DatabaseWrapper.SqlServer;
+using ZilLion.Core.QuartzWrapper.Config;
+using ZilLion.Core.QuartzWrapper.Respository;
 
 namespace ZilLion.Core.TaskManager.Respository
 {
-    public class TaskConfigRespository : Respository<TaskConfig>, ITaskConfigRespository
+    public class TaskConfigRespository : SqlServerRespository<TaskConfig>, ITaskConfigRespository
     {
-        public TaskConfigRespository()
+        public TaskConfigRespository(TaskRunnerConfig runnerConfig)
         {
-            Context = new SourceContext();
+            Context = new TaskRunnerContext(runnerConfig.TaskConfigDbConString);
         }
+
 
         public IList<TaskConfig> GetjobConfigs()
         {
-            return GetList<TaskConfig>(@"select * from task_config").ToList();
+            return GetList(@"select * from task_config").ToList();
         }
 
         /// <summary>
@@ -25,7 +28,7 @@ namespace ZilLion.Core.TaskManager.Respository
         public TaskConfig GetjobConfigById(string jobid)
         {
             return
-                GetList<TaskConfig>(@"select * from task_config where jobid=@jobid and isdeleted=0", new {jobid})
+                GetList(@"select * from task_config where jobid=@jobid and isdeleted=0", new {jobid})
                     .FirstOrDefault();
         }
 
@@ -36,7 +39,7 @@ namespace ZilLion.Core.TaskManager.Respository
         /// <param name="config"></param>
         public void RemoveTaskConfig(TaskConfig config)
         {
-            config.IsDeleted = 1;//置状态
+            config.IsDeleted = 1; //置状态
             SaveData(config);
         }
 

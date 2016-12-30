@@ -1,20 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using AppDomainToolkit;
-using ZilLion.Core.Log;
-using ZilLion.Core.TaskManager.Config;
-using ZilLion.Core.TaskManager.Quartz;
+using ZilLion.Core.QuartzWrapper.Config;
+using ZilLion.Core.QuartzWrapper.Quartz;
+using ZilLion.Core.QuartzWrapper.Respository;
 using ZilLion.Core.TaskManager.Respository;
-using ZilLion.Core.TaskManager.Unities.File;
+using ZilLion.Core.Unities.UnitiesMethods;
 
 namespace ZilLion.Core.TaskManager
 {
     public class TaskRunner
     {
-        private static bool _hasInited;
-
         /// <summary>
         ///     作业执行appdomain
         /// </summary>
@@ -28,6 +25,10 @@ namespace ZilLion.Core.TaskManager
 
         #region 初始化
 
+        private static TaskRunnerConfig _runnerConfig;
+
+        private static bool _hasInited;
+
         /// <summary>
         ///     初始化
         /// </summary>
@@ -38,10 +39,16 @@ namespace ZilLion.Core.TaskManager
             if (_hasInited)
                 throw new Exception("TaskRunner职能初始化一次");
             _instance = new TaskRunner();
-            TaskManagerConfig.TaskConfigDbConString = jobConfigDbConString; //获得task配置库数据库连接
-            TaskManagerConfig.TaskServerId = taskServerId; //设置TaskRunner寄宿的serverid
 
-
+            _runnerConfig = new TaskRunnerConfig
+            {
+                TaskConfigDbConString = jobConfigDbConString,
+                TaskServerId = taskServerId
+            };
+            _taskConfigRespository = new TaskConfigRespository(_runnerConfig);
+            _taskRunLogRespository = new TaskRunLogRespository(_runnerConfig);
+            //获得task配置库数据库连接
+            //设置TaskRunner寄宿的serverid
             _hasInited = true;
             //QuartzHelper.InitScheduler(); //任务调度初始化成功
 
@@ -56,8 +63,8 @@ namespace ZilLion.Core.TaskManager
 
         //public IList<TaskConfig> UseableJobconfigs { get; set; }
 
-        private readonly ITaskConfigRespository _taskConfigRespository = new TaskConfigRespository();
-        private readonly ITaskRunLogRespository _taskRunLogRespository = new TaskRunLogRespository();
+        private static ITaskConfigRespository _taskConfigRespository;
+        private static ITaskRunLogRespository _taskRunLogRespository;
 
         private void GetUseableJobconfigs()
         {
@@ -108,12 +115,12 @@ namespace ZilLion.Core.TaskManager
                         Taskid = config.Taskid,
                         Taskname = config.Taskname,
                         Taskremark = config.TaskRemark,
-                        Taskserverid = TaskManagerConfig.TaskServerId,
+                        Taskserverid = _runnerConfig.TaskServerId,
                         Taskstatus = 0,
                         Tasknextruntime = DateTime.Now,
                         Tasklastruntime = DateTime.Now
                     };
-                    _taskRunLogRespository.AddTaskRunLog(runlog);
+                    _taskRunLogRespository.SaveTaskRunLog(runlog);
                 }
 
             #region 根据模块创建新的appdomain,并开始任务
@@ -137,11 +144,9 @@ namespace ZilLion.Core.TaskManager
 
                 RemoteAction.Invoke(context.Domain, config.Key, config.Value, (k, v) =>
                 {
-                    Debug.WriteLine(AppDomain.CurrentDomain.FriendlyName);
                     var container = SchedulerContainer.GetContainerInstance();
-                    container.InitScheduler(k, v);
+                    container.InitScheduler(k, v, _runnerConfig);
                     container.StartScheduler();
-                    Debug.WriteLine("first" + SchedulerContainer.GetContainerInstance().GetHashCode());
                 });
             }
 
@@ -170,7 +175,7 @@ namespace ZilLion.Core.TaskManager
                 taskid => { SchedulerContainer.GetContainerInstance().RunOnceTask(taskid); });
             var runlog = _taskRunLogRespository.GetTaskRunLogById(config.Taskid);
             runlog.Tasklastruntime = DateTime.Now;
-            _taskRunLogRespository.ModifyTaskRunLog(runlog);
+            _taskRunLogRespository.SaveTaskRunLog(runlog);
         }
 
         /// <summary>
@@ -203,7 +208,7 @@ namespace ZilLion.Core.TaskManager
             //    QuartzHelper.PauseJob(taskId);
             var runlog = _taskRunLogRespository.GetTaskRunLogById(taskId);
             runlog.Taskstatus = (short) (status == TaskStatus.Run ? 0 : 1);
-            _taskRunLogRespository.ModifyTaskRunLog(runlog);
+            _taskRunLogRespository.SaveTaskRunLog(runlog);
         }
 
         /// <summary>

@@ -1,4 +1,6 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
+using System.Reflection;
 
 namespace ZilLion.Core.DatabaseWrapper.Dapper
 {
@@ -6,7 +8,6 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
     {
         bool IsEnableRuleValidate { get; set; }
         string GetErrors(bool customerValidateable=true);
-
-       
+        IDictionary<PropertyInfo,string> GetErrorsDic(bool customerValidateable = true);
     }
 }

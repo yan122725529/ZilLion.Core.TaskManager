@@ -33,15 +33,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dapper, Version=1.50.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Dapper.1.50.2\lib\net451\Dapper.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="DapperExtensions, Version=1.5.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DapperExtensions.1.5.0\lib\net45\DapperExtensions.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -55,13 +48,17 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\AppDomainToolkit\AppDomainToolkit.csproj">
-      <Project>{2A53F4FB-0918-485C-9266-BD8FF3FA0D84}</Project>
+    <ProjectReference Include="..\SharedResources\AppDomainToolkit\AppDomainToolkit.csproj">
+      <Project>{2a53f4fb-0918-485c-9266-bd8ff3fa0d84}</Project>
       <Name>AppDomainToolkit</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SharedResources\DapperExtensions.Net45\DapperExtensions.Net45.csproj">
+      <Project>{1656ec3c-7876-4c67-9650-c61acb806d35}</Project>
+      <Name>DapperExtensions.Net45</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SharedResources\quartznet-2.4.1\src\Quartz\Quartz.2010.csproj">
+      <Project>{aef8823b-e45b-4b35-a4d0-c08c1196d017}</Project>
+      <Name>Quartz.2010</Name>
     </ProjectReference>
     <ProjectReference Include="..\TaskPlugin\TaskPlugin.csproj">
       <Project>{61aa98e0-1997-4836-8789-36dd3fa4b9cc}</Project>
@@ -71,10 +68,25 @@
       <Project>{ae052494-c7ad-425e-98d4-bad57fe3c042}</Project>
       <Name>ZilLion.Core.DatabaseWrapper</Name>
     </ProjectReference>
+    <ProjectReference Include="..\ZilLion.Core.Log\ZilLion.Core.Log.csproj">
+      <Project>{671dbc63-3eec-4fc7-8cca-3164139b3a24}</Project>
+      <Name>ZilLion.Core.Log</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ZilLion.Core.QuartzWrapper\ZilLion.Core.QuartzWrapper.csproj">
+      <Project>{befe36cc-a38d-470d-8d4e-1d9af1a3ee03}</Project>
+      <Name>ZilLion.Core.QuartzWrapper</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ZilLion.Core.TaskManager\ZilLion.Core.TaskManager.csproj">
       <Project>{46c6359a-b271-42bb-8c8c-baaff979e4c4}</Project>
       <Name>ZilLion.Core.TaskManager</Name>
     </ProjectReference>
+    <ProjectReference Include="..\ZilLion.Core.Unities\ZilLion.Core.Unities.csproj">
+      <Project>{BEEFFD98-18A9-4F2D-BA97-9D42B9401781}</Project>
+      <Name>ZilLion.Core.Unities</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

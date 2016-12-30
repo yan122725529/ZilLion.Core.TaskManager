@@ -12,12 +12,12 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
     /// </summary>
     public class UnitOfWork : IDisposable
     {
-        private static readonly object lockObj = new object();
+        private static readonly object LockObj = new object();
         //[ThreadStatic]
-        private static ConcurrentStack<UnitOfWork> unitOfWorkStack;
-        private readonly bool isShadow;
-        private readonly List<OperatorInfo> list;
-        private readonly List<Map> Maplist;
+        private static ConcurrentStack<UnitOfWork> _unitOfWorkStack;
+        private readonly bool _isShadow;
+        private readonly List<OperatorInfo> _list;
+        private readonly List<Map> _maplist;
 
         public UnitOfWork() : this(UnitOfWorkOption.Required)
         {
@@ -25,21 +25,21 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
 
         public UnitOfWork(UnitOfWorkOption option)
         {
-            list = new List<OperatorInfo>();
-            Maplist = new List<Map>();
-            isShadow = false;
+            _list = new List<OperatorInfo>();
+            _maplist = new List<Map>();
+            _isShadow = false;
             Option = option;
             if (Option == UnitOfWorkOption.Required)
             {
                 var currentUnitOfWork = GetCurrentUnitOfWork();
                 if (currentUnitOfWork == null)
                 {
-                    list = new List<OperatorInfo>();
+                    _list = new List<OperatorInfo>();
                 }
                 else
                 {
-                    list = currentUnitOfWork.list;
-                    isShadow = true;
+                    _list = currentUnitOfWork._list;
+                    _isShadow = true;
                 }
             }
             UnitOfWorkStack.Push(this);
@@ -54,25 +54,25 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
         {
             get
             {
-                if (unitOfWorkStack == null)
+                if (_unitOfWorkStack == null)
                 {
-                    lock (lockObj)
+                    lock (LockObj)
                     {
-                        if (unitOfWorkStack == null)
+                        if (_unitOfWorkStack == null)
                         {
-                            unitOfWorkStack = new ConcurrentStack<UnitOfWork>();
+                            _unitOfWorkStack = new ConcurrentStack<UnitOfWork>();
                         }
                     }
                 }
-                return unitOfWorkStack;
+                return _unitOfWorkStack;
             }
         }
 
         public void Dispose()
         {
-            if (!isShadow)
+            if (!_isShadow)
             {
-                list.Clear();
+                _list.Clear();
             }
             var currentUnitOfWork = GetCurrentUnitOfWork();
             if (currentUnitOfWork == this)
@@ -91,7 +91,7 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
                 entity = entity,
                 Map = map
             };
-            list.Add(item);
+            _list.Add(item);
         }
 
         public void ChangeOperator(Func<IDbConnection, IDbTransaction, object, object> action, IDbContext context)
@@ -101,26 +101,26 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
                 func = action,
                 Context = context
             };
-            list.Add(item);
+            _list.Add(item);
         }
 
         private void Commit()
         {
-            IDbConnection connection;
-            switch ((from p in list select p.Context.ContextName).Distinct<string>().Count<string>())
+            switch ((from p in _list select p.Context.ContextName).Distinct<string>().Count<string>())
             {
                 case 0:
                     break;
 
                 case 1:
-                    using (connection = list.First().Context.GetConnection())
+                    IDbConnection connection;
+                    using (connection = _list.First().Context.GetConnection())
                     {
                         connection.Open();
                         using (var transaction = connection.BeginTransaction())
                         {
                             try
                             {
-                                foreach (var info in list)
+                                foreach (var info in _list)
                                 {
                                     var entity = MapForeignKey(info);
                                     var id = info.func(connection, transaction, entity);
@@ -128,7 +128,7 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
                                     {
                                         string[] strs = info.Map.ColumnName.Split('.');
                                         var map = new Map {id = id, MapTablename = strs[0], MapTableCol = strs[1]};
-                                        Maplist.Add(map);
+                                        _maplist.Add(map);
                                     }
                                 }
                                 transaction.Commit();
@@ -140,7 +140,7 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
                             finally
                             {
                                 connection.Close();
-                                list.Clear();
+                                _list.Clear();
                             }
                         }
                     }
@@ -157,7 +157,7 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
         {
             if (info.entity == null)
                 return null;
-            var map = Maplist.SingleOrDefault(p => p.MapTablename == info.entity.GetType().Name);
+            var map = _maplist.SingleOrDefault(p => p.MapTablename == info.entity.GetType().Name);
             if (map == null)
                 return info.entity;
             try
@@ -187,7 +187,7 @@ namespace ZilLion.Core.DatabaseWrapper.Dapper
             {
                 throw new Exception("当前提交的事务内还有未完成的其他事务,请先完成内部的事务");
             }
-            if ((Option == UnitOfWorkOption.RequiresNew) || ((Option == UnitOfWorkOption.Required) && !isShadow))
+            if ((Option == UnitOfWorkOption.RequiresNew) || ((Option == UnitOfWorkOption.Required) && !_isShadow))
             {
                 Commit();
             }
